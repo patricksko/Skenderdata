@@ -4,7 +4,7 @@ This repository provides a setup guide for preparing synthetic datasets using [B
 
 ## 📁 Folder Structure
 
-After cloning this repository, navigate to the `resources` folder and create the following subfolders:
+Create the following subfolders:
 
 ```bash
 cd resources
@@ -23,23 +23,23 @@ To improve the realism of your synthetic scenes, you can download the **CC0 text
 blenderproc download cc_textures ./cc_textures/
 ```
 
-This step is optional but helps enhance scene diversity with realistic material variations.
+This step is optional because we use own pictures for texture for better training.
 
 ## 🎯 Downloading Object Datasets
 
 BlenderProc supports multiple datasets from the [BOP benchmark](https://bop.felk.cvut.cz/datasets/). You will need to download the following datasets:
 
 ### Target Objects
-- **[YCB-V](https://bop.felk.cvut.cz/datasets/ycb-v/)**  
+- **YCB-V** 
   This dataset contains the target objects of interest for recognition and pose estimation.
 
 ### Disturbance Objects
 Download any or all of the following to use as distractors in your scenes:
 
-- **[T-LESS](https://bop.felk.cvut.cz/datasets/t-less/)**
-- **[TUD-L (TYO-L)](https://bop.felk.cvut.cz/datasets/tud-light/)**  
+- **T-LESS**
+- **TUD-L (TYO-L)**  
   (Sometimes referred to as TYO-L.)
-- **[HB (HomebrewedDB)](https://bop.felk.cvut.cz/datasets/hb/)**
+- **HB (HomebrewedDB)**
 
 Extract all the downloaded datasets into the `resources/Object_Data/` folder. The resulting structure should look like this:
 
