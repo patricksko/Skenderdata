@@ -1,0 +1,34 @@
+{
+    "numpy_seed": 19,
+    "blenderproc_seed": "69",
+    "draw_bbox": true,
+  
+    "bop_path": "../../../resources/BOP_YCB_V",
+    "cc_textures_path": "../../../resources/cc_textures",
+    "save_path": "../output_blenderproc",
+    "scene": {
+      "room_size_multiplier_min": 5.0,
+      "room_size_multiplier_max": 10.0,
+      "simulate_physics": false,
+      "distractors": {
+        "min_count": 5,
+        "max_count": 20
+      },
+      "lights": {
+        "min_count": 3,
+        "max_count": 6,
+        "min_intensity": 50,
+        "max_intensity": 300
+      },
+      "objects": {
+        "min_count": 1,
+        "max_count": 3
+      }
+    },
+    "dataset": {
+      "num_cameras": 10,
+      "num_scenes": 20,
+      "pose": true,
+      "detection": true
+    }
+  }

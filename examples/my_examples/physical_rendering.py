@@ -29,11 +29,8 @@ target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path=os.path.join(args.
 tless_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path=os.path.join(args.bop_parent_path, 'tless'), model_type='cad', object_model_unit='mm')
 hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path=os.path.join(args.bop_parent_path, 'hb'), object_model_unit='mm')
 tyol_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path=os.path.join(args.bop_parent_path, 'tyol'), object_model_unit='mm')
+print("Dataloading accomplished")
 
-# lego_obj = loaded_objs[0]
-
-# # Duplicate it two more times (total: 3)
-# target_bop_objs = [lego_obj] + [lego_obj.duplicate() for _ in range(2)]
 # Load intrinsics
 bproc.loader.load_bop_intrinsics(bop_dataset_path=os.path.join(args.bop_parent_path, 'ycbv'))
 
