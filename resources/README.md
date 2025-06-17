@@ -49,7 +49,7 @@ resources/
 ├── Object_Data/
 │   ├── ycbv/
 │   ├── tless/
-│   ├── tudlight/
+│   ├── tyol/
 │   └── hb/
 ```
 
@@ -59,7 +59,9 @@ resources/
 
 Once the resources are prepared, you can start creating your BlenderProc scenes by referencing the dataset paths in your configuration files or rendering scripts.
 
-For an example rendering pipeline or to get started with scene generation, see the `examples/` folder (if provided).
+For an example rendering pipeline or to get started with scene generation, see the `examples/` folder.
+
+To insert own models just create a new folder in Object_Data (e.g. Legoblock\models) and insert the .ply file(s)
 
 ## 📌 Notes
 
