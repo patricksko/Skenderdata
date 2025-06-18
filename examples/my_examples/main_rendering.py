@@ -179,8 +179,8 @@ for i in range(num_scenes):
                     if 0 <= x < img.shape[1] and 0 <= y < img.shape[0]:
                         img[y-2:y+3, x-2:x+3] = [255, 0, 0]
 
-                min_xy = np.min(points, axis=0).astype(int)
-                max_xy = np.max(points, axis=0).astype(int)
+                min_xy = np.min(points, axis=0).astype(int) #top left corner
+                max_xy = np.max(points, axis=0).astype(int) #bottom right corner
                 if (0 <= min_xy[0] < img.shape[1] and 0 <= max_xy[0] < img.shape[1] and
                     0 <= min_xy[1] < img.shape[0] and 0 <= max_xy[1] < img.shape[0]):
                     img[min_xy[1]:max_xy[1], min_xy[0]] = [0, 255, 0]
