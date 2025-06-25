@@ -6,6 +6,15 @@
     "bop_path": "../../../resources/BOP_YCB_V",
     "cc_textures_path": "../../../resources/cc_textures",
     "save_path": "../output_blenderproc",
+    "camera": {
+      "px": 600,
+      "py": 600,
+      "u0": 320,
+      "v0": 240,
+      "h": 480,
+      "w": 640,
+      "randomize_params_percent": 5.0
+    },
     "scene": {
       "room_size_multiplier_min": 5.0,
       "room_size_multiplier_max": 10.0,
@@ -22,13 +31,20 @@
       },
       "objects": {
         "min_count": 1,
-        "max_count": 3
+        "max_count": 3,
+        "multiple_occurences": true,
+        "scale_noise": 0.2,
+        "displacement_max_amount": 0.001,
+        "pbr_noise": 0.3,
+        "cam_min_dist_rel": 1.0,
+        "cam_max_dist_rel": 3.0
       }
     },
     "dataset": {
-      "num_cameras": 10,
-      "num_scenes": 20,
+      "num_cameras": 5,
+      "num_scenes": 2,
       "pose": true,
-      "detection": true
+      "detection": true,
+      "empty_images_per_scene": 0
     }
   }

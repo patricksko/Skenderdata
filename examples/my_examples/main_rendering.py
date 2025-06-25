@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 from PIL import Image
+import yaml
 # import debugpy
 
 # debugpy.listen(5678)
@@ -16,8 +17,13 @@ from PIL import Image
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True, type=str, help='Path to the JSON configuration file for the dataset generation script')
 parser.add_argument('--draw_bbox', action='store_true', help="Draw 2D bounding boxes on images if set")
+parser.add_argument('--val_split_ratio', type=float, default=0.2, help='Ratio of validation data (default: 0.2)')
 args = parser.parse_args()
 config_path = Path(args.config)
+
+CLASS_NAME_TO_ID = {
+    "Lego_Block": 0  # You can extend this later
+}
 
 assert config_path.exists(), f'Config file {config_path} does not exist'
 with open(config_path, 'r') as json_config_file:
@@ -30,7 +36,15 @@ num_scenes = json_config['dataset']['num_scenes']
 num_cameras = json_config['dataset']['num_cameras']
 
 output_dir = os.path.normpath(os.path.join(config_path, json_config["save_path"]))
+image_train_dir = os.path.join(output_dir, "images", "train")
+image_val_dir = os.path.join(output_dir, "images", "val")
+label_train_dir = os.path.join(output_dir, "labels", "train")
+label_val_dir = os.path.join(output_dir, "labels", "val")
 
+os.makedirs(image_train_dir, exist_ok=True)
+os.makedirs(image_val_dir, exist_ok=True)
+os.makedirs(label_train_dir, exist_ok=True)
+os.makedirs(label_val_dir, exist_ok=True)
 
 bproc.init()
 
@@ -189,17 +203,59 @@ for i in range(num_scenes):
                     img[max_xy[1], min_xy[0]:max_xy[0]] = [0, 255, 0]
 
             Image.fromarray(img).save(os.path.join(bbox_overlay_dir, f"{i:04d}_{frame_idx:02d}.jpg"))
+
+            yolo_label_dir = os.path.join(output_dir, "labels")
+            yolo_image_dir = os.path.join(output_dir, "images")
+            os.makedirs(yolo_label_dir, exist_ok=True)
+            os.makedirs(yolo_image_dir, exist_ok=True)
+
+            image_name = f"{i:04d}_{frame_idx:02d}.jpg"
+
+            # Determine split
+            if np.random.rand() < args.val_split_ratio:
+                split = 'val'
+                image_save_path = os.path.join(image_val_dir, image_name)
+                label_save_path = os.path.join(label_val_dir, image_name.replace('.jpg', '.txt'))
+            else:
+                split = 'train'
+                image_save_path = os.path.join(image_train_dir, image_name)
+                label_save_path = os.path.join(label_train_dir, image_name.replace('.jpg', '.txt'))
+
+            # Save image
+            Image.fromarray(img).save(image_save_path)
+
+            # Save label
+            with open(label_save_path, 'w') as f:
+                for obj in sampled_target_bop_objs:
+                    class_id = CLASS_NAME_TO_ID["Lego_Block"]
+                    bbox_2d = bproc.camera.project_points(obj.get_bound_box(), frame=frame_idx)
+                    if bbox_2d is None or len(bbox_2d) == 0:
+                        continue
+
+                    min_xy = np.min(bbox_2d, axis=0)
+                    max_xy = np.max(bbox_2d, axis=0)
+
+                    x_center = (min_xy[0] + max_xy[0]) / 2 / img.shape[1]
+                    y_center = (min_xy[1] + max_xy[1]) / 2 / img.shape[0]
+                    width = (max_xy[0] - min_xy[0]) / img.shape[1]
+                    height = (max_xy[1] - min_xy[1]) / img.shape[0]
+
+                    if width <= 0 or height <= 0:
+                        continue
+
+                    f.write(f"{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n")
+
     # ================================================================
-    depth_scale = 0.1  # 1 mm per unit
-    scaled_depths = [(depth / depth_scale).astype(np.uint16) for depth in data["depth"]]
+    # depth_scale = 0.1  # 1 mm per unit
+    # scaled_depths = [(depth / depth_scale).astype(np.uint16) for depth in data["depth"]]
 
-    # Overwrite depth in the data dict
-    data["depth"] = scaled_depths
+    # # Overwrite depth in the data dict
+    # data["depth"] = scaled_depths
 
-    scene_dir = os.path.join(output_dir, f"scene_{i}")
-    os.makedirs(scene_dir, exist_ok=True)
+    # scene_dir = os.path.join(output_dir, f"scene_{i}")
+    # os.makedirs(scene_dir, exist_ok=True)
 
-    bproc.writer.write_hdf5(scene_dir, data)
+    # bproc.writer.write_hdf5(scene_dir, data)
     # Write data in bop format
     # bproc.writer.write_bop(os.path.join(output_dir, 'bop_data'),
     #                        target_objects=sampled_target_bop_objs,

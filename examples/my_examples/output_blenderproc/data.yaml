@@ -1,0 +1,4 @@
+train: /home/skoumal/dev/BlenderProc/examples/my_examples/output_blenderproc/images/train
+val: /home/skoumal/dev/BlenderProc/examples/my_examples/output_blenderproc/images/val
+nc: 1
+names: ['Lego_Block']
