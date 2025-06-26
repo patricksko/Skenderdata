@@ -41,8 +41,8 @@
       }
     },
     "dataset": {
-      "num_cameras": 10,
-      "num_scenes": 40,
+      "num_cameras": 2,
+      "num_scenes": 3,
       "pose": true,
       "detection": true,
       "empty_images_per_scene": 0
