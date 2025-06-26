@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 from PIL import Image
 import yaml
+import random
 # import debugpy
 
 # debugpy.listen(5678)
@@ -86,14 +87,22 @@ lp_intensity = np.random.uniform(json_config['scene']['lights']['min_intensity']
 light_point.set_energy(lp_intensity)
 
 # Load textures
-#cc_textures = bproc.loader.load_ccmaterials(args.cc_textures_path)
-cc_texture_path = os.path.join(cc_textures_path, "TU_floor/ALU_Desk.jpeg")
-cc_textures = bproc.material.create_material_from_texture(cc_texture_path, "ALU_Desk")
+cc_textures = bproc.loader.load_ccmaterials(cc_textures_path)
+# cc_texture_path = os.path.join(cc_textures_path, "TU_floor/ALU_Desk.jpeg")
+# cc_textures = bproc.material.create_material_from_texture(cc_texture_path, "ALU_Desk")
+
+custom_texture_dir = './resources/my_textures/'
+
+# List of image files
+image_texture_paths = [os.path.join(custom_texture_dir, f) for f in os.listdir(custom_texture_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+
+# Convert image paths to materials
+custom_texture_mats = [bproc.material.create_material_from_texture(tex_path, f"custom_tex_{i}") for i, tex_path in enumerate(image_texture_paths)]
 
 
-# # Optionally set additional properties
-# cc_texture.set_principled_shader_value("Roughness", 0.8)
-# cc_texture.set_principled_shader_value("Specular", 0.2)
+
+
+
 print("Loaded Texture")
 def sample_pose_func(obj: bproc.types.MeshObject):
     min = np.random.uniform([-0.3, -0.3, 0.0], [-0.2, -0.2, 0.0])
@@ -105,6 +114,7 @@ bproc.renderer.enable_depth_output(activate_antialiasing=False)
 bproc.renderer.set_max_amount_of_samples(50)
 
 for i in range(num_scenes):
+    colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
     num_obj = np.random.randint(json_config['scene']['objects']['min_count'], json_config['scene']['objects']['max_count'])
     print(num_obj)
     sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=num_obj, replace=False))
@@ -119,15 +129,37 @@ for i in range(num_scenes):
         obj.set_shading_mode('auto')
 
         # Clone the material to avoid shared material issues
-        mats = obj.get_materials()
-        if mats:
-            original_mat = mats[0]
-            new_mat = original_mat
-            obj.replace_materials(new_mat)
+        # mats = obj.get_materials()
+        # if mats:
+        #     original_mat = mats[0]
+        #     new_mat = original_mat
+        #     obj.replace_materials(new_mat)
 
-            new_mat.set_principled_shader_value("Base Color", color)
-            new_mat.set_principled_shader_value("Roughness", 0.8)
-            new_mat.set_principled_shader_value("Specular IOR Level", 0.1)
+        #     new_mat.set_principled_shader_value("Base Color", color)
+        #     new_mat.set_principled_shader_value("Roughness", 0.8)
+        #     new_mat.set_principled_shader_value("Specular IOR Level", 0.1)
+
+        # obj.hide(False)
+        # Assign a random texture material
+        if random.random() < 0.3:
+            # 30% chance: assign a random texture material
+            random_texture = np.random.choice(custom_texture_mats)
+            obj.replace_materials(random_texture)
+
+            # Optionally tweak shader properties
+            random_texture.set_principled_shader_value("Roughness", np.random.uniform(0.2, 0.9))
+            # random_texture.set_principled_shader_value("Specular", np.random.uniform(0.0, 0.3))
+        else:
+            # 70% chance: assign a flat color material
+            mats = obj.get_materials()
+            if mats:
+                original_mat = mats[0]
+                new_mat = original_mat
+                obj.replace_materials(new_mat)
+
+                new_mat.set_principled_shader_value("Base Color", color)
+                new_mat.set_principled_shader_value("Roughness", 0.8)
+                new_mat.set_principled_shader_value("Specular IOR Level", 0.1)
 
         obj.hide(False)
         
@@ -149,7 +181,7 @@ for i in range(num_scenes):
     location = bproc.sampler.shell(center=[0, 0, 0], radius_min=1, radius_max=1.5, elevation_min=5, elevation_max=89)
     light_point.set_location(location)
 
-    random_cc_texture = cc_textures#np.random.choice(cc_textures)
+    random_cc_texture = np.random.choice(cc_textures)
     for plane in room_planes:
         print("Texture for room")
         plane.replace_materials(random_cc_texture)
@@ -188,19 +220,19 @@ for i in range(num_scenes):
             for obj in sampled_target_bop_objs:
                 points = bproc.camera.project_points(obj.get_bound_box(), frame=frame_idx)
 
-                for p in points:
-                    x, y = int(p[0]), int(p[1])
-                    if 0 <= x < img.shape[1] and 0 <= y < img.shape[0]:
-                        img[y-2:y+3, x-2:x+3] = [255, 0, 0]
+                # for p in points:
+                #     x, y = int(p[0]), int(p[1])
+                #     if 0 <= x < img.shape[1] and 0 <= y < img.shape[0]:
+                #         img[y-2:y+3, x-2:x+3] = [255, 0, 0]
 
                 min_xy = np.min(points, axis=0).astype(int) #top left corner
                 max_xy = np.max(points, axis=0).astype(int) #bottom right corner
-                if (0 <= min_xy[0] < img.shape[1] and 0 <= max_xy[0] < img.shape[1] and
-                    0 <= min_xy[1] < img.shape[0] and 0 <= max_xy[1] < img.shape[0]):
-                    img[min_xy[1]:max_xy[1], min_xy[0]] = [0, 255, 0]
-                    img[min_xy[1]:max_xy[1], max_xy[0]] = [0, 255, 0]
-                    img[min_xy[1], min_xy[0]:max_xy[0]] = [0, 255, 0]
-                    img[max_xy[1], min_xy[0]:max_xy[0]] = [0, 255, 0]
+                # if (0 <= min_xy[0] < img.shape[1] and 0 <= max_xy[0] < img.shape[1] and
+                #     0 <= min_xy[1] < img.shape[0] and 0 <= max_xy[1] < img.shape[0]):
+                #     img[min_xy[1]:max_xy[1], min_xy[0]] = [0, 255, 0]
+                #     img[min_xy[1]:max_xy[1], max_xy[0]] = [0, 255, 0]
+                #     img[min_xy[1], min_xy[0]:max_xy[0]] = [0, 255, 0]
+                #     img[max_xy[1], min_xy[0]:max_xy[0]] = [0, 255, 0]
 
             Image.fromarray(img).save(os.path.join(bbox_overlay_dir, f"{i:04d}_{frame_idx:02d}.jpg"))
 
@@ -244,7 +276,9 @@ for i in range(num_scenes):
                         continue
 
                     f.write(f"{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n")
-
+    else:
+        img = np.array(rgb_img)
+        Image.fromarray(img).save(os.path.join(bbox_overlay_dir, f"{i:04d}_{frame_idx:02d}.jpg"))
     # ================================================================
     # depth_scale = 0.1  # 1 mm per unit
     # scaled_depths = [(depth / depth_scale).astype(np.uint16) for depth in data["depth"]]
