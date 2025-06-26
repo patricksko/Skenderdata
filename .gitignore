@@ -25,6 +25,9 @@ blenderproc/external/vhacd
 *.pyc
 *.swp
 *.pt
+*.png
+*.jpeg
+*.jpg
 docs/build/
 !docs/source/index.rst
 docs/source/*rst
