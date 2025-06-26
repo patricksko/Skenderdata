@@ -1,7 +1,7 @@
-task: detect
+task: segment
 mode: train
-model: yolo11n.pt
-data: ./examples/my_examples/data.yaml
+model: yolo11n-seg.pt
+data: ./examples/my_examples/output_blenderproc/dataset.yaml
 epochs: 100
 time: null
 patience: 10

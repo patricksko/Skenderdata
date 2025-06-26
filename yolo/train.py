@@ -1,9 +1,9 @@
 from ultralytics import YOLO
  
-model = YOLO("yolo11n.pt")
+model = YOLO("yolo11n-seg.pt")
 
 result = model.train(
-    data="./examples/my_examples/data.yaml",
+    data="./examples/my_examples/output_blenderproc/dataset.yaml",
     epochs = 100,
     imgsz=640,
     batch=16,

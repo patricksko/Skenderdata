@@ -1,0 +1,6 @@
+names:
+- Lego_Block
+nc: 1
+path: /home/skoumal/dev/BlenderProc/examples/my_examples/output_blenderproc
+train: images/train
+val: images/val
