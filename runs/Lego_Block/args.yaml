@@ -1,6 +1,6 @@
 task: detect
 mode: train
-model: yolov8n.pt
+model: yolo11n.pt
 data: ./examples/my_examples/data.yaml
 epochs: 100
 time: null

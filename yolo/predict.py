@@ -14,6 +14,7 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import matplotlib.pyplot as plt
 # Load YOLO model
 model = YOLO("runs/Lego_Block/weights/best.pt")
 
@@ -22,52 +23,61 @@ img_path = "./examples/my_examples/Lego_Block2.jpeg"
 img = cv2.imread(img_path)
 
 # Predict
-results = model.predict(
+results = model(
     source=img_path,
     imgsz=640,
     conf=0.5,
-    save=False,   # We'll handle visualization ourselves here
+    save=True,   # We'll handle visualization ourselves here
     device="0"
 )
-# Convert results to numpy
-boxes = results[0].boxes.xyxy.cpu().numpy()  # shape: [num_boxes, 4]
+# # Convert results to numpy
+# boxes = results[0].boxes.xyxy.cpu().numpy()  # shape: [num_boxes, 4]
 
-for box in boxes:
-    xmin, ymin, xmax, ymax = box.astype(int)
+# for box in boxes:
+#     xmin, ymin, xmax, ymax = box.astype(int)
 
-    # Crop the detected region
-    crop = img[ymin:ymax, xmin:xmax]
+#     crop = img[ymin:ymax, xmin:xmax]
+    
+#     # Split into B, G, R channels
+#     colors = ('b', 'g', 'r')
+#     plt.figure(figsize=(10, 4))
 
-    # Convert crop to grayscale
-    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-    # Threshold the image to get binary mask
-    _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+#     for i, col in enumerate(colors):
+#         hist = cv2.calcHist([crop], [i], None, [256], [0, 256])
+#         plt.plot(hist, color=col)
+#         plt.xlim([0, 256])
+#         plt.title("Color Histogram for Cropped Region")
 
-    # Find contours
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if len(contours) == 0:
-        continue  # no contours found, skip
+#     plt.xlabel("Pixel Intensity")
+#     plt.ylabel("Frequency")
+#     plt.tight_layout()
+#     plt.show()
+#     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Find the largest contour
-    largest_contour = max(contours, key=cv2.contourArea)
+#     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    # Ignore small contours that may be noise
-    if cv2.contourArea(largest_contour) < 20:
-        continue
+#     # Show result (optional)
+#     cv2.imshow("Rotated Bounding Box", thresh)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+#     # Find contours
+#     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Compute the minimum area rotated rectangle
-    rect = cv2.minAreaRect(largest_contour)
-    box_points = cv2.boxPoints(rect)
-    box_points = np.int0(box_points)
+#     # Filter by area and get largest contour
+#     contours = sorted(contours, key=cv2.contourArea, reverse=True)
+#     largest = contours[0]
 
-    # Since box_points are relative to crop, shift them to original image coords
-    box_points[:, 0] += xmin
-    box_points[:, 1] += ymin
+#     # Get the minimum-area rotated rectangle
+#     rect = cv2.minAreaRect(largest)
+#     box = cv2.boxPoints(rect)
+#     box = np.intp(box)
 
-    # Draw oriented bounding box on original image
-    cv2.drawContours(img, [box_points], 0, (0, 255, 0), 2)
+#     # Draw the rotated bounding box
+#     rotated = img.copy()
+#     cv2.drawContours(rotated, [box], 0, (0, 255, 0), 2)
 
-# Show the final image with oriented boxes
-cv2.imshow("Oriented Bounding Boxes", img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#     # Show result (optional)
+#     cv2.imshow("Rotated Bounding Box", rotated)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+
