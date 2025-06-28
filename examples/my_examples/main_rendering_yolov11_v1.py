@@ -1,6 +1,5 @@
 import blenderproc as bproc
 from blenderproc.python.loader import TextureLoader
-import open3d as o3d
 import argparse
 import os
 import json
@@ -10,12 +9,6 @@ import cv2
 from PIL import Image
 import yaml
 import random
-
-# import debugpy
-
-
-# debugpy.listen(5678)
-# debugpy.wait_for_client()
 
 
 def sample_pose_func(obj: bproc.types.MeshObject):
@@ -114,16 +107,6 @@ def visualize_mask_and_polygons(rgb_img, mask, polygons, obj_name, save_path):
 
 
 
-
-
-
-######################################################################################################################
-
-
-
-
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True, type=str, help='Path to the JSON configuration file for the dataset generation script')
 parser.add_argument('--val_split_ratio', type=float, default=0.2, help='Ratio of validation data (default: 0.2)')
@@ -138,8 +121,6 @@ CLASS_NAME_TO_ID = {
 assert config_path.exists(), f'Config file {config_path} does not exist'
 with open(config_path, 'r') as json_config_file:
     json_config = json.load(json_config_file)
-
-
 
 # Fix path resolution - use config file's parent directory as base
 config_dir = config_path
@@ -176,152 +157,74 @@ if json_config.get("draw_bbox", False):
 mask_viz_dir = os.path.join(output_dir, "mask_visualizations")
 os.makedirs(mask_viz_dir, exist_ok=True)
 
+
+
 bproc.init()
 
-# Load BOP objects - check if paths exist before loading
-target_bop_objs = []
-if os.path.exists(os.path.join(bop_dataset_path, 'Legoblock')):
-    target_bop_objs = bproc.loader.load_bop_objs(
-        bop_dataset_path=os.path.join(bop_dataset_path, 'Legoblock'), 
-        object_model_unit='mm', 
-        obj_ids=[1, 2, 3]
-    )
-    print(f"Loaded {len(target_bop_objs)} target objects")
-else:
-    print(f"Warning: Legoblock path {os.path.join(bop_dataset_path, 'Legoblock')} not found")
+# load bop objects into the scene
+target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'), object_model_unit='mm', obj_ids=[1, 2, 3])
 
-# Load distractor objects (with error handling)
-tless_dist_bop_objs = []
-if os.path.exists(os.path.join(bop_dataset_path, 'tless')):
-    try:
-        tless_dist_bop_objs = bproc.loader.load_bop_objs(
-            bop_dataset_path=os.path.join(bop_dataset_path, 'tless'), 
-            model_type='cad', 
-            object_model_unit='mm'
-        )
-        print(f"Loaded {len(tless_dist_bop_objs)} T-LESS objects")
-    except Exception as e:
-        print(f"Warning: Could not load T-LESS objects: {e}")
+# load distractor bop objects
+tless_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'tless'), model_type = 'cad', object_model_unit='mm')
+hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'hb'), object_model_unit='mm')
+tyol_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'tyol'), object_model_unit='mm')
 
-hb_dist_bop_objs = []
-if os.path.exists(os.path.join(bop_dataset_path, 'hb')):
-    try:
-        hb_dist_bop_objs = bproc.loader.load_bop_objs(
-            bop_dataset_path=os.path.join(bop_dataset_path, 'hb'), 
-            object_model_unit='mm'
-        )
-        print(f"Loaded {len(hb_dist_bop_objs)} HB objects")
-    except Exception as e:
-        print(f"Warning: Could not load HB objects: {e}")
+# load BOP datset intrinsics
+bproc.loader.load_bop_intrinsics(bop_dataset_path = os.path.join(bop_dataset_path, 'ycbv'))
 
-tyol_dist_bop_objs = []
-if os.path.exists(os.path.join(bop_dataset_path, 'tyol')):
-    try:
-        tyol_dist_bop_objs = bproc.loader.load_bop_objs(
-            bop_dataset_path=os.path.join(bop_dataset_path, 'tyol'), 
-            object_model_unit='mm'
-        )
-        print(f"Loaded {len(tyol_dist_bop_objs)} TYOL objects")
-    except Exception as e:
-        print(f"Warning: Could not load TYOL objects: {e}")
-
-print("Dataloading accomplished")
-
-# Load intrinsics (check if path exists)
-if os.path.exists(os.path.join(bop_dataset_path, 'ycbv')):
-    bproc.loader.load_bop_intrinsics(bop_dataset_path=os.path.join(bop_dataset_path, 'ycbv'))
-    print("Loaded YCBV intrinsics")
-else:
-    print("Warning: YCBV intrinsics not found, using default camera settings")
-
-# Set shading and hide objects initially
-all_objects = target_bop_objs + tless_dist_bop_objs + hb_dist_bop_objs + tyol_dist_bop_objs
-for obj in all_objects:
+# set shading and hide objects
+for obj in (target_bop_objs + tless_dist_bop_objs + hb_dist_bop_objs + tyol_dist_bop_objs):
     obj.set_shading_mode('auto')
     obj.hide(True)
-
-# Create room
-room_planes = [
-    bproc.object.create_primitive('PLANE', scale=[2, 2, 1]),
-    bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[0, -2, 2], rotation=[-1.570796, 0, 0]),
-    bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[0, 2, 2], rotation=[1.570796, 0, 0]),
-    bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[2, 0, 2], rotation=[0, -1.570796, 0]),
-    bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[-2, 0, 2], rotation=[0, 1.570796, 0])
-]
-
+    
+# create room
+room_planes = [bproc.object.create_primitive('PLANE', scale=[2, 2, 1]),
+               bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[0, -2, 2], rotation=[-1.570796, 0, 0]),
+               bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[0, 2, 2], rotation=[1.570796, 0, 0]),
+               bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[2, 0, 2], rotation=[0, -1.570796, 0]),
+               bproc.object.create_primitive('PLANE', scale=[2, 2, 1], location=[-2, 0, 2], rotation=[0, 1.570796, 0])]
 for plane in room_planes:
-    plane.enable_rigidbody(False, collision_shape='BOX', mass=1.0, friction=100.0, linear_damping=0.99, angular_damping=0.99)
+    plane.enable_rigidbody(False, collision_shape='BOX', mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
 
-# Lights
+# sample light color and strenght from ceiling
 light_plane = bproc.object.create_primitive('PLANE', scale=[3, 3, 1], location=[0, 0, 10])
 light_plane.set_name('light_plane')
 light_plane_material = bproc.material.create('light_material')
+
+# sample point light on shell
 light_point = bproc.types.Light()
 light_point.set_energy(200)
 
-# Load textures
-cc_textures = []
-if os.path.exists(cc_textures_path):
-    try:
-        cc_textures = bproc.loader.load_ccmaterials(cc_textures_path)
-        print(f"Loaded {len(cc_textures)} CC textures")
-    except Exception as e:
-        print(f"Warning: Could not load CC textures: {e}")
-else:
-    print(f"Warning: CC textures path {cc_textures_path} not found")
+# load cc_textures
+cc_textures = bproc.loader.load_ccmaterials(cc_textures_path)
 
-# # Load custom textures
-# custom_texture_dir = './resources/my_textures/'
-# custom_texture_mats = []
-# if os.path.exists(custom_texture_dir):
-#     image_files = [f for f in os.listdir(custom_texture_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-#     if image_files:
-#         for i, filename in enumerate(image_files):
-#             try:
-#                 tex_path = os.path.join(custom_texture_dir, filename)
-#                 mat = bproc.material.create_material_from_texture(tex_path, f"custom_tex_{i}")
-#                 custom_texture_mats.append(mat)
-#             except Exception as e:
-#                 print(f"Warning: Could not load texture {filename}: {e}")
-#         print(f"Loaded {len(custom_texture_mats)} custom textures")
-#     else:
-#         print(f"Warning: No image files found in '{custom_texture_dir}'")
-# else:
-#     print(f"Warning: Custom texture directory '{custom_texture_dir}' not found")
-
-
-# Enable segmentation output
-bproc.renderer.enable_segmentation_output(map_by=["instance", "name"])
+# Define a function that samples 6-DoF poses
+def sample_pose_func(obj: bproc.types.MeshObject):
+    min = np.random.uniform([-0.3, -0.3, 0.0], [-0.2, -0.2, 0.0])
+    max = np.random.uniform([0.2, 0.2, 0.4], [0.3, 0.3, 0.6])
+    obj.set_location(np.random.uniform(min, max))
+    obj.set_rotation_euler(bproc.sampler.uniformSO3())
+    
+# activate depth rendering without antialiasing and set amount of samples for color rendering
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
 bproc.renderer.set_max_amount_of_samples(50)
-
-
-
-print("Starting scene generation...")
+bproc.renderer.enable_segmentation_output(map_by=["instance", "name"])
 
 global_object_counter = 0
 
 for i in range(num_scenes):
     print(f"Generating scene {i+1}/{num_scenes}")
     
-    # Skip if no target objects available
-    if not target_bop_objs:
-        print("No target objects available, skipping scene generation")
-        break
-    
     # Generate random colors
     colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
-
-    # Sample number of objects for this scene
-    obj_config = json_config.get('scene', {}).get('objects', {'min_count': 1, 'max_count': 5})
-    num_target_objs = np.random.randint(obj_config['min_count'], obj_config['max_count'])
-    num_distractor_tless = 5 if tless_dist_bop_objs else 0
-    num_distractor_hb = 5 if hb_dist_bop_objs else 0
-    num_distractor_tyol = 5 if tyol_dist_bop_objs else 0
-
+    # Sample bop objects for a scene
+    # sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=3, replace=False))
+    # sampled_distractor_bop_objs = list(np.random.choice(tless_dist_bop_objs, size=6, replace=False))
+    # sampled_distractor_bop_objs += list(np.random.choice(hb_dist_bop_objs, size=6, replace=False))
+    # sampled_distractor_bop_objs += list(np.random.choice(tyol_dist_bop_objs, size=6, replace=False))
     # Sample target objects with proper copying
     sampled_target_bop_objs = []
-    for _ in range(num_target_objs):
+    for _ in range(3):
         original_obj = random.choice(target_bop_objs)
         # Create a copy of the object
         copied_obj = original_obj.duplicate()
@@ -333,9 +236,9 @@ for i in range(num_scenes):
     sampled_distractor_bop_objs = []
     
     for dist_objs, num_dist, prefix in [
-        (tless_dist_bop_objs, num_distractor_tless, "tless"),
-        (hb_dist_bop_objs, num_distractor_hb, "hb"),
-        (tyol_dist_bop_objs, num_distractor_tyol, "tyol")
+        (tless_dist_bop_objs, 6, "tless"),
+        (hb_dist_bop_objs, 6, "hb"),
+        (tyol_dist_bop_objs, 6, "tyol")
     ]:
         if dist_objs and num_dist > 0:
             for _ in range(num_dist):
@@ -347,18 +250,8 @@ for i in range(num_scenes):
         else:
             print("shit")
             exit()
-
-    all_sampled_objects = sampled_target_bop_objs + sampled_distractor_bop_objs
-    
-    if not all_sampled_objects:
-        print(f"Warning: No objects to sample for scene {i+1}. Skipping...")
-        continue
-
-    print(f"Scene {i+1}: {len(sampled_target_bop_objs)} target objects, {len(sampled_distractor_bop_objs)} distractor objects")
-
-    # Apply materials and physics
-    for obj in all_sampled_objects:
-        # Apply materials
+    # Randomize materials and set physics
+    for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs): 
         if obj in sampled_target_bop_objs:
             # Target objects: random texture or color
             # if random.random() < 0.2 and custom_texture_mats:
@@ -375,6 +268,7 @@ for i in range(num_scenes):
             mat.set_principled_shader_value("Base Color", random.choice(colors))
             mat.set_principled_shader_value("Roughness", np.random.uniform(0.5, 0.9))
             mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0.1, 0.6))
+            obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
             obj.hide(False)
         else:
             mat = obj.get_materials()[0]
@@ -385,148 +279,65 @@ for i in range(num_scenes):
             mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0, 1.0))
             obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
             obj.hide(False)
-
-        obj.enable_rigidbody(True, mass=1.0, friction=100.0, linear_damping=0.99, angular_damping=0.99)
-
     
-    light_plane_material.make_emissive(
-        emission_strength=np.random.uniform(3, 6),
-        emission_color=np.random.uniform([0.5, 0.5, 0.5, 1.0], [1.0, 1.0, 1.0, 1.0])
-    )
+    # Sample two light sources
+    light_plane_material.make_emissive(emission_strength=np.random.uniform(3,6), 
+                                    emission_color=np.random.uniform([0.5, 0.5, 0.5, 1.0], [1.0, 1.0, 1.0, 1.0]))  
     light_plane.replace_materials(light_plane_material)
-    light_point.set_color(np.random.uniform([0.5, 0.5, 0.5], [1, 1, 1]))
-    location = bproc.sampler.shell(center=[0, 0, 0], radius_min=1, radius_max=1.5, elevation_min=5, elevation_max=89)
+    light_point.set_color(np.random.uniform([0.5,0.5,0.5],[1,1,1]))
+    location = bproc.sampler.shell(center = [0, 0, 0], radius_min = 1, radius_max = 1.5,
+                            elevation_min = 5, elevation_max = 89)
     light_point.set_location(location)
 
-    # Apply background texture to room planes
-    if cc_textures:
-        random_cc_texture = random.choice(cc_textures)
-        for plane in room_planes:
-            plane.replace_materials(random_cc_texture)
-    else:
-        print("Shit")
-        exit()
-    # Sample poses and simulate physics
-    try:
-        bproc.object.sample_poses(
-            objects_to_sample=all_sampled_objects,
-            sample_pose_func=sample_pose_func,
-            max_tries=1000
-        )
-        
-        bproc.object.simulate_physics_and_fix_final_poses(
-            min_simulation_time=3,
-            max_simulation_time=10,
-            check_object_interval=1,
-            substeps_per_frame=20,
-            solver_iters=25
-        )
-    except Exception as e:
-        print(f"Warning: Physics simulation failed for scene {i+1}: {e}")
-        # Clean up and continue to next scene
-        for obj in all_sampled_objects:
-            try:
-                obj.disable_rigidbody()
-                obj.hide(True)
-                obj.delete()
-            except:
-                pass
-        continue
+    # sample CC Texture and assign to room planes
+    random_cc_texture = np.random.choice(cc_textures)
+    for plane in room_planes:
+        plane.replace_materials(random_cc_texture)
 
-    # Create BVH tree for camera pose sampling
-    try:
-        bop_bvh_tree = bproc.object.create_bvh_tree_multi_objects(all_sampled_objects)
-        print(f" Created BVH tree for scene {i+1}")
-    except Exception as e:
-        print(f"Warning: Could not create BVH tree for scene {i+1}: {e}")
-        # Clean up and continue
-        for obj in all_sampled_objects:
-            try:
-                obj.disable_rigidbody()
-                obj.hide(True)
-                obj.delete()
-            except:
-                pass
-        continue
 
-    # Sample camera poses
-    cam_poses_generated = 0
-    max_camera_tries = 1000
-    camera_tries = 0
-    
-    while cam_poses_generated < num_cameras and camera_tries < max_camera_tries:
-        camera_tries += 1
-        location = bproc.sampler.shell(center=[0, 0, 0], radius_min=0.61, radius_max=1.24, elevation_min=5, elevation_max=89)
-        
-        # Point camera towards target objects if available
-        if sampled_target_bop_objs:
-            num_poi_objs = min(len(sampled_target_bop_objs), 5)
-            random_poi_selection = np.random.choice(sampled_target_bop_objs, size=num_poi_objs, replace=False)
-            poi = bproc.object.compute_poi(random_poi_selection)
-        else:
-            poi = np.array([0, 0, 0])
+    # Sample object poses and check collisions 
+    bproc.object.sample_poses(objects_to_sample = sampled_target_bop_objs + sampled_distractor_bop_objs,
+                            sample_pose_func = sample_pose_func, 
+                            max_tries = 1000)
+            
+    # Physics Positioning
+    bproc.object.simulate_physics_and_fix_final_poses(min_simulation_time=3,
+                                                    max_simulation_time=10,
+                                                    check_object_interval=1,
+                                                    substeps_per_frame = 20,
+                                                    solver_iters=25)
 
-        rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-np.pi, np.pi))
+    # BVH tree used for camera obstacle checks
+    bop_bvh_tree = bproc.object.create_bvh_tree_multi_objects(sampled_target_bop_objs + sampled_distractor_bop_objs)
+
+    cam_poses = 0
+    while cam_poses < num_cameras:
+        # Sample location
+        location = bproc.sampler.shell(center = [0, 0, 0],
+                                radius_min = 0.61,
+                                radius_max = 1.24,
+                                elevation_min = 5,
+                                elevation_max = 89)
+        # Determine point of interest in scene as the object closest to the mean of a subset of objects
+        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=3, replace=False))
+        # Compute rotation based on vector going from location towards poi
+        rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
+        # Add homog cam pose based on location an rotation
         cam2world_matrix = bproc.math.build_transformation_mat(location, rotation_matrix)
+        
+        # Check that obstacles are at least 0.3 meter away from the camera and make sure the view interesting enough
+        if bproc.camera.perform_obstacle_in_view_check(cam2world_matrix, {"min": 0.3}, bop_bvh_tree):
+            # Persist camera pose
+            bproc.camera.add_camera_pose(cam2world_matrix, frame=cam_poses)
+            cam_poses += 1
 
-        # Perform obstacle check
-        try:
-            if bproc.camera.perform_obstacle_in_view_check(cam2world_matrix, {"min": 0.3}, bop_bvh_tree):
-                bproc.camera.add_camera_pose(cam2world_matrix, frame=cam_poses_generated)
-                cam_poses_generated += 1
-        except Exception as e:
-            # If obstacle check fails, skip this camera pose
-            continue
-
-    if cam_poses_generated == 0:
-        print(f"Warning: No valid camera poses found for scene {i+1}. Skipping...")
-        # Clean up objects
-        for obj in all_sampled_objects:
-            try:
-                obj.disable_rigidbody()
-                obj.hide(True)
-                obj.delete()
-            except:
-                pass
-        continue
-
-    print(f"Generated {cam_poses_generated} camera poses for scene {i+1}")
-
-    # Render scene
-    try:
-        data = bproc.renderer.render()
-    except Exception as e:
-        print(f"Warning: Rendering failed for scene {i+1}: {e}")
-        # Clean up and continue
-        for obj in all_sampled_objects:
-            try:
-                obj.disable_rigidbody()
-                obj.hide(True)
-                obj.delete()
-            except:
-                pass
-        continue
-
-    # Check if rendering was successful
-    if not data.get("colors") or len(data["colors"]) == 0:
-        print(f"Warning: No images rendered for scene {i+1}. Skipping label generation.")
-        # Clean up objects
-        for obj in all_sampled_objects:
-            try:
-                obj.disable_rigidbody()
-                obj.hide(True)
-                obj.delete()
-            except:
-                pass
-        continue
-
+    # render the whole pipeline
+    data = bproc.renderer.render()
     # Get image dimensions
     img_height, img_width, _ = data["colors"][0].shape
-    print(f"Rendered {len(data['colors'])} images for scene {i+1} ({img_width}x{img_height})")
-
     # Process each rendered frame
     for frame_idx in range(len(data["colors"])):
-        rgb_img = (data["colors"][frame_idx] * 255).astype(np.uint8)
+        rgb_img = data["colors"][frame_idx]
 
         # Get segmentation data
         seg_mask_instances = data["instance_segmaps"][frame_idx]
@@ -611,28 +422,19 @@ for i in range(num_scenes):
 
         print(f"  Frame {frame_idx}: {labels_written} labels written")
 
-        # Draw bounding boxes for debugging if enabled
-        if json_config.get("draw_bbox", False):
-            img_with_bbox = rgb_img.copy()
-            for obj in sampled_target_bop_objs:
-                try:
-                    points = bproc.camera.project_points(obj.get_bound_box(), frame=frame_idx)
-                    
-                    if len(points) > 0:
-                        min_xy = np.min(points, axis=0).astype(int)
-                        max_xy = np.max(points, axis=0).astype(int)
-                        min_x, min_y = max(0, min_xy[0]), max(0, min_xy[1])
-                        max_x, max_y = min(img_width - 1, max_xy[0]), min(img_height - 1, max_xy[1])
-
-                        if max_x > min_x and max_y > min_y:
-                            cv2.rectangle(img_with_bbox, (min_x, min_y), (max_x, max_y), (0, 255, 0), 2)
-                except Exception as e:
-                    print(f"Warning: Could not draw bbox for object {obj.get_name()}: {e}")
-
-            Image.fromarray(img_with_bbox).save(os.path.join(bbox_overlay_dir, image_name))
-
+       
+    #  # Write data in bop format
+    # bproc.writer.write_bop(os.path.join(output_dir, 'bop_data'),
+    #                        target_objects = sampled_target_bop_objs,
+    #                        dataset = 'Legoblock',
+    #                        depth_scale = 0.1,
+    #                        depths = data["depth"],
+    #                        colors = data["colors"], 
+    #                        color_file_format = "JPEG",
+    #                        ignore_dist_thres = 10)
+    
     # Clean up objects for next scene
-    for obj in all_sampled_objects:
+    for obj in sampled_target_bop_objs + sampled_distractor_bop_objs:
         try:
             obj.disable_rigidbody()
             obj.hide(True)
@@ -658,3 +460,4 @@ with open(yaml_path, 'w') as f:
     yaml.dump(dataset_yaml_content, f, default_flow_style=False)
 
 print(f"Generated dataset.yaml in {yaml_path}")
+   

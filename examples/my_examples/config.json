@@ -3,7 +3,7 @@
     "blenderproc_seed": "69",
     "draw_bbox": true,
   
-    "bop_path": "../../../resources/BOP_YCB_V",
+    "bop_path": "../../../resources/Object_Data",
     "cc_textures_path": "../../../resources/cc_textures",
     "save_path": "../output_blenderproc",
     "camera": {
@@ -41,8 +41,8 @@
       }
     },
     "dataset": {
-      "num_cameras": 10,
-      "num_scenes": 40,
+      "num_cameras": 4,
+      "num_scenes": 1,
       "pose": true,
       "detection": true,
       "empty_images_per_scene": 0
