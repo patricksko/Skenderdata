@@ -20,6 +20,7 @@ resources/haven
 resources/pix3d
 resources/front_3D/3D_front_mapping_generated.csv
 blenderproc/external/vhacd
+my_examples/output_blenderproc
 *.blend1
 .vscode
 *.pyc
@@ -36,6 +37,7 @@ docs/source/examples/
 docs/source/*md
 blenderproc_resources/
 /resources/*
+
 
 .venv/
 .vscode/
