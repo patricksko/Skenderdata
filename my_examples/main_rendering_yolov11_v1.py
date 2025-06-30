@@ -162,7 +162,7 @@ os.makedirs(mask_viz_dir, exist_ok=True)
 bproc.init()
 
 # load bop objects into the scene
-target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'), object_model_unit='mm', obj_ids=[1, 2, 3])
+target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'), object_model_unit='mm', obj_ids=[1, 2, 3, 4, 5, 6])
 
 # load distractor bop objects
 tless_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'tless'), model_type = 'cad', object_model_unit='mm')
@@ -224,7 +224,7 @@ for i in range(num_scenes):
     # sampled_distractor_bop_objs += list(np.random.choice(tyol_dist_bop_objs, size=6, replace=False))
     # Sample target objects with proper copying
     sampled_target_bop_objs = []
-    for _ in range(3):
+    for _ in range(5):
         original_obj = random.choice(target_bop_objs)
         # Create a copy of the object
         copied_obj = original_obj.duplicate()
@@ -247,9 +247,6 @@ for i in range(num_scenes):
                 copied_obj.set_name(f"distractor_{prefix}_obj_{global_object_counter}")
                 global_object_counter += 1
                 sampled_distractor_bop_objs.append(copied_obj)
-        else:
-            print("shit")
-            exit()
     # Randomize materials and set physics
     for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs): 
         if obj in sampled_target_bop_objs:
@@ -319,7 +316,7 @@ for i in range(num_scenes):
                                 elevation_min = 5,
                                 elevation_max = 89)
         # Determine point of interest in scene as the object closest to the mean of a subset of objects
-        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=3, replace=False))
+        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=4, replace=False))
         # Compute rotation based on vector going from location towards poi
         rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
         # Add homog cam pose based on location an rotation
@@ -419,20 +416,7 @@ for i in range(num_scenes):
                     class_id = CLASS_NAME_TO_ID["Lego_Block"]
                     f.write(f"{class_id} " + " ".join(norm_poly) + "\n")
                     labels_written += 1
-
-        print(f"  Frame {frame_idx}: {labels_written} labels written")
-
-       
-    #  # Write data in bop format
-    # bproc.writer.write_bop(os.path.join(output_dir, 'bop_data'),
-    #                        target_objects = sampled_target_bop_objs,
-    #                        dataset = 'Legoblock',
-    #                        depth_scale = 0.1,
-    #                        depths = data["depth"],
-    #                        colors = data["colors"], 
-    #                        color_file_format = "JPEG",
-    #                        ignore_dist_thres = 10)
-    
+  
     # Clean up objects for next scene
     for obj in sampled_target_bop_objs + sampled_distractor_bop_objs:
         try:

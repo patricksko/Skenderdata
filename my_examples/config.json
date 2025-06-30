@@ -3,8 +3,8 @@
     "blenderproc_seed": "69",
     "draw_bbox": true,
   
-    "bop_path": "../../../resources/Object_Data",
-    "cc_textures_path": "../../../resources/cc_textures",
+    "bop_path": "../../resources/Object_Data",
+    "cc_textures_path": "../../resources/cc_textures",
     "save_path": "../output_blenderproc",
     "camera": {
       "px": 600,
@@ -41,8 +41,8 @@
       }
     },
     "dataset": {
-      "num_cameras": 4,
-      "num_scenes": 1,
+      "num_cameras": 10,
+      "num_scenes": 40,
       "pose": true,
       "detection": true,
       "empty_images_per_scene": 0
