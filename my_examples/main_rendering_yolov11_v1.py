@@ -9,8 +9,31 @@ import cv2
 from PIL import Image
 import yaml
 import random
+import debugpy
+import png
 
 
+# debugpy.listen(5678)
+# debugpy.wait_for_client()
+
+
+def save_depth(path: str, im: np.ndarray):
+        """Saves a depth image (16-bit) to a PNG file.
+        From the BOP toolkit (https://github.com/thodan/bop_toolkit).
+
+        :param path: Path to the output depth image file.
+        :param im: ndarray with the depth image to save.
+        """
+        if not path.endswith(".png"):
+            raise ValueError('Only PNG format is currently supported.')
+
+        im[im > 65535] = 65535
+        im_uint16 = np.round(im).astype(np.uint16)
+
+        # PyPNG library can save 16-bit PNG and is faster than imageio.imwrite().
+        w_depth = png.Writer(im.shape[1], im.shape[0], greyscale=True, bitdepth=16)
+        with open(path, 'wb') as f:
+            w_depth.write(f, np.reshape(im_uint16, (-1, im.shape[1])))
 def sample_pose_func(obj: bproc.types.MeshObject):
     """Sample random pose for an object"""
     min_loc = np.random.uniform([-0.3, -0.3, 0.0], [-0.2, -0.2, 0.0])
@@ -142,6 +165,11 @@ image_val_dir = os.path.join(output_dir, "images", "val")
 os.makedirs(image_train_dir, exist_ok=True)
 os.makedirs(image_val_dir, exist_ok=True)
 
+depth_train_dir = os.path.join(output_dir, "depth", "train")
+depth_val_dir = os.path.join(output_dir, "depth", "val")
+os.makedirs(depth_train_dir, exist_ok=True)
+os.makedirs(depth_val_dir, exist_ok=True)
+
 # Directories for YOLO segmentation labels
 label_seg_train_dir = os.path.join(output_dir, "labels", "train")
 label_seg_val_dir = os.path.join(output_dir, "labels", "val")
@@ -217,11 +245,6 @@ for i in range(num_scenes):
     
     # Generate random colors
     colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
-    # Sample bop objects for a scene
-    # sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=3, replace=False))
-    # sampled_distractor_bop_objs = list(np.random.choice(tless_dist_bop_objs, size=6, replace=False))
-    # sampled_distractor_bop_objs += list(np.random.choice(hb_dist_bop_objs, size=6, replace=False))
-    # sampled_distractor_bop_objs += list(np.random.choice(tyol_dist_bop_objs, size=6, replace=False))
     # Sample target objects with proper copying
     sampled_target_bop_objs = []
     for _ in range(5):
@@ -335,6 +358,8 @@ for i in range(num_scenes):
     # Process each rendered frame
     for frame_idx in range(len(data["colors"])):
         rgb_img = data["colors"][frame_idx]
+        depth_img = data["depth"][frame_idx]
+        depth_mm = 1000.0 * depth_img  # [m] -> [mm]
 
         # Get segmentation data
         seg_mask_instances = data["instance_segmaps"][frame_idx]
@@ -352,13 +377,16 @@ for i in range(num_scenes):
             split = 'val'
             image_save_path = os.path.join(image_val_dir, image_name)
             label_save_path = os.path.join(label_seg_val_dir, image_name.replace('.jpg', '.txt'))
+            depth_save_path = os.path.join(depth_val_dir, image_name.replace('.jpg', '.png'))
         else:
             split = 'train'
             image_save_path = os.path.join(image_train_dir, image_name)
             label_save_path = os.path.join(label_seg_train_dir, image_name.replace('.jpg', '.txt'))
+            depth_save_path = os.path.join(depth_train_dir, image_name.replace('.jpg', '.png'))
 
         # Save image
         Image.fromarray(rgb_img).save(image_save_path)
+        save_depth(depth_save_path, depth_mm)
 
         # Generate YOLO segmentation labels and visualizations
         labels_written = 0
@@ -444,4 +472,5 @@ with open(yaml_path, 'w') as f:
     yaml.dump(dataset_yaml_content, f, default_flow_style=False)
 
 print(f"Generated dataset.yaml in {yaml_path}")
+
    

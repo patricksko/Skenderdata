@@ -42,7 +42,7 @@
     },
     "dataset": {
       "num_cameras": 10,
-      "num_scenes": 40,
+      "num_scenes": 1,
       "pose": true,
       "detection": true,
       "empty_images_per_scene": 0
