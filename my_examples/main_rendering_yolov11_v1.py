@@ -350,9 +350,23 @@ for i in range(num_scenes):
             # Persist camera pose
             bproc.camera.add_camera_pose(cam2world_matrix, frame=cam_poses)
             cam_poses += 1
+        objs = bproc.object.get_all_mesh_objects()
+        camera_pose = bproc.camera.get_camera_pose()
+
+        with open("object_poses_in_camera.txt", "w") as f:
+            for obj in objs:
+                obj_pose_world = obj.get_pose()
+                obj_pose_camera = np.linalg.inv(camera_pose) @ obj_pose_world
+                
+                # flatten the 4x4 matrix to a list for easier saving
+                flattened = obj_pose_camera.flatten()
+                # you can write name and matrix elements in a simple CSV-style line
+                f.write(f"{obj.get_name()},{','.join(map(str, flattened))}\n")
 
     # render the whole pipeline
     data = bproc.renderer.render()
+
+    
     # Get image dimensions
     img_height, img_width, _ = data["colors"][0].shape
     # Process each rendered frame
