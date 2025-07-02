@@ -11,6 +11,7 @@ import yaml
 import random
 import debugpy
 import png
+from scipy.spatial.transform import Rotation as R
 
 
 # debugpy.listen(5678)
@@ -252,9 +253,9 @@ for i in range(num_scenes):
     sampled_distractor_bop_objs = []
     
     for dist_objs, num_dist, prefix in [
-        (tless_dist_bop_objs, 6, "tless"),
-        (hb_dist_bop_objs, 6, "hb"),
-        (tyol_dist_bop_objs, 6, "tyol")
+        (tless_dist_bop_objs, 0, "tless"),
+        (hb_dist_bop_objs, 0, "hb"),
+        (tyol_dist_bop_objs, 0, "tyol")
     ]:
         if dist_objs and num_dist > 0:
             for _ in range(num_dist):
@@ -325,7 +326,7 @@ for i in range(num_scenes):
 
     cam_poses = 0
     while cam_poses < num_cameras:
-        # Sample location
+        # Sample camera location
         location = bproc.sampler.shell(center = [0, 0, 0],
                                 radius_min = 0.61,
                                 radius_max = 1.24,
@@ -333,151 +334,200 @@ for i in range(num_scenes):
                                 elevation_max = 89)
         # Determine point of interest in scene as the object closest to the mean of a subset of objects
         poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=4, replace=False))
-        # Compute rotation based on vector going from location towards poi
+        # Compute rotation based on vector going from camera towards poi
         rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
         # Add homog cam pose based on location an rotation
-        cam2world_matrix = bproc.math.build_transformation_mat(location, rotation_matrix)
+        cam2world = bproc.math.build_transformation_mat(location, rotation_matrix)
+        with open("H_C_W", "a") as f:
+            f.write(f"Camera frame {cam_poses}: \n")
+            f.write(f"Homogenous T: {cam2world} \n")
+        
+
         
         # Check that obstacles are at least 0.3 meter away from the camera and make sure the view interesting enough
-        if bproc.camera.perform_obstacle_in_view_check(cam2world_matrix, {"min": 0.3}, bop_bvh_tree):
+        if bproc.camera.perform_obstacle_in_view_check(cam2world, {"min": 0.3}, bop_bvh_tree):
             # Persist camera pose
-            bproc.camera.add_camera_pose(cam2world_matrix, frame=cam_poses)
+            bproc.camera.add_camera_pose(cam2world, frame=cam_poses)
             cam_poses += 1
+
         objs = bproc.object.get_all_mesh_objects()
-        camera_pose = bproc.camera.get_camera_pose()
-
-        with open("object_poses_in_camera.txt", "w") as f:
-            for obj in objs:
-                obj_pose_world = obj.get_pose()
-                obj_pose_camera = np.linalg.inv(camera_pose) @ obj_pose_world
+        target_objs = [obj for obj in objs if obj in sampled_target_bop_objs]
+        # camera_pose = bproc.camera.get_camera_pose()
+    
+        # with open("object_poses_in_camera.txt", "a") as f:
+        #     for obj in target_objs:
+        #         obj2world = obj.get_local2world_mat()
+        #         world2cam = np.linalg.inv(cam2world)  # World to camera
+        #         obj2cam_matrix = world2cam @ obj2world  # Object to camera (correct!)
+        #         translation = obj2cam_matrix[:3, 3]
+        #         rotation = obj2cam_matrix[:3, :3]
+        #         quat = R.from_matrix(rotation).as_quat()
                 
-                # flatten the 4x4 matrix to a list for easier saving
-                flattened = obj_pose_camera.flatten()
-                # you can write name and matrix elements in a simple CSV-style line
-                f.write(f"{obj.get_name()},{','.join(map(str, flattened))}\n")
-
+        #         f.write(f"Camera frame {cam_poses}, Object {obj.get_name()}: \n")
+        #         f.write(f"Translation: {translation.tolist()}\n")
+        #         f.write(f"Quaternion: {quat.tolist()}\n")
+        #         f.write("\n")
     # render the whole pipeline
     data = bproc.renderer.render()
-
-    
+    K = bproc.camera.get_intrinsics_as_K_matrix()
     # Get image dimensions
     img_height, img_width, _ = data["colors"][0].shape
     # Process each rendered frame
     for frame_idx in range(len(data["colors"])):
-        rgb_img = data["colors"][frame_idx]
-        depth_img = data["depth"][frame_idx]
-        depth_mm = 1000.0 * depth_img  # [m] -> [mm]
+        rgb_img = data["colors"][frame_idx].copy()
 
-        # Get segmentation data
-        seg_mask_instances = data["instance_segmaps"][frame_idx]
+        # Get camera pose for this frame
+        H_C_W = bproc.camera.get_camera_pose(frame_idx)
+        H_W_C = np.linalg.inv(H_C_W)
         
-        # Build instance name mapping
-        instance_name_map = {}
-        if "instance_attribute_maps" in data and len(data["instance_attribute_maps"]) > frame_idx:
-            for item in data["instance_attribute_maps"][frame_idx]:
-                instance_name_map[item["idx"]] = item["name"]
-
-        image_name = f"scene{i:04d}_cam{frame_idx:02d}.jpg"
-
-        # Determine split (train/val)
-        if np.random.rand() < args.val_split_ratio:
-            split = 'val'
-            image_save_path = os.path.join(image_val_dir, image_name)
-            label_save_path = os.path.join(label_seg_val_dir, image_name.replace('.jpg', '.txt'))
-            depth_save_path = os.path.join(depth_val_dir, image_name.replace('.jpg', '.png'))
-        else:
-            split = 'train'
-            image_save_path = os.path.join(image_train_dir, image_name)
-            label_save_path = os.path.join(label_seg_train_dir, image_name.replace('.jpg', '.txt'))
-            depth_save_path = os.path.join(depth_train_dir, image_name.replace('.jpg', '.png'))
-
-        # Save image
-        Image.fromarray(rgb_img).save(image_save_path)
-        save_depth(depth_save_path, depth_mm)
-
-        # Generate YOLO segmentation labels and visualizations
-        labels_written = 0
-        with open(label_save_path, 'w') as f:
-            for obj_idx, obj in enumerate(sampled_target_bop_objs):
-                # Find instance ID for this object
-                obj_instance_id = None
-                obj_name = obj.get_name()
+        
+        # Project each target object to image coordinates
+        for obj in target_objs:
+            H_O_W = obj.get_local2world_mat()
+            with open("H_O_W.txt", "a") as f:
+                f.write(f"Object {obj.get_name()}: \n")
+                f.write(f"THomogenous T {H_O_W}\n")
+            # H_W_O = np.linalg.inv(H_O_W)
+            # H_C_O = H_W_C @ H_O_W
+            # H_O_C = np.linalg.inv(H_C_O)
+            # obj_pos_cam = H_C_O[:3, 3]
+            # if obj_pos_cam[2] < 0:
+            #     # Project 3D point to 2D image coordinates
+            #     # Convert to homogeneous coordinates
+            #     obj_pos_homogeneous = np.array([obj_pos_cam[0], obj_pos_cam[1], obj_pos_cam[2]])
                 
-                for inst_id, mapped_name in instance_name_map.items():
-                    if mapped_name == obj_name:
-                        obj_instance_id = inst_id
-                        break
+            #     # Project using camera intrinsics: pixel = K * [X/Z, Y/Z, 1]
+            #     pixel_coords = K @ obj_pos_homogeneous
+            #     pixel_coords = pixel_coords / (pixel_coords[2])  # Normalize by Z
                 
-                if obj_instance_id is None:
-                    continue
+            #     # Convert to integer pixel coordinates
+            #     u = int(img_width/2 - (int(pixel_coords[0])-img_width/2)) # x coordinate
+            #     v = int(pixel_coords[1])  # y coordinate
                 
-                # Extract mask for this object instance
-                mask = (seg_mask_instances == obj_instance_id).astype(np.uint8)
-
-                # Check if object is visible
-                if not np.any(mask):
-                    continue
-
-                # Convert mask to polygons
-                polygons = mask_to_polygons(mask)
-
-                if polygons:  # Only create visualization if we have valid polygons
-                    # Create mask visualization
-                    viz_name = f"scene{i:04d}_cam{frame_idx:02d}_obj{obj_idx:02d}_{obj_name}.jpg"
-                    viz_path = os.path.join(mask_viz_dir, viz_name)
+            #     # Check if point is within image bounds
+            #     if 0 <= u < img_width and 0 <= v < img_height:
+            #         # Draw red circle at object position
+            #         cv2.circle(rgb_img, (u, v), radius=5, color=(0, 0, 255), thickness=10)  # BGR format
                     
-                    # Convert polygons to normalized format for visualization
-                    norm_polygons = []
-                    for poly in polygons:
-                        norm_poly = []
-                        for k, p_coord in enumerate(poly):
-                            if k % 2 == 0:  # x coordinate
-                                norm_poly.append(p_coord / img_width)
-                            else:  # y coordinate  
-                                norm_poly.append(p_coord / img_height)
-                        norm_polygons.append(norm_poly)
+            #         # Optionally add object name as text
+            #         cv2.putText(rgb_img, obj.get_name(), (u + 10, v - 10), 
+            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        # Save or display the annotated image
+        cv2.imwrite(f"annotated_frame_{frame_idx:04d}.png", rgb_img)
+    exit()
+#         depth_img = data["depth"][frame_idx]
+#         depth_mm = 1000.0 * depth_img  # [m] -> [mm]
+
+#         # Get segmentation data
+#         seg_mask_instances = data["instance_segmaps"][frame_idx]
+        
+#         # Build instance name mapping
+#         instance_name_map = {}
+#         if "instance_attribute_maps" in data and len(data["instance_attribute_maps"]) > frame_idx:
+#             for item in data["instance_attribute_maps"][frame_idx]:
+#                 instance_name_map[item["idx"]] = item["name"]
+
+#         image_name = f"scene{i:04d}_cam{frame_idx:02d}.jpg"
+
+#         # Determine split (train/val)
+#         if np.random.rand() < args.val_split_ratio:
+#             split = 'val'
+#             image_save_path = os.path.join(image_val_dir, image_name)
+#             label_save_path = os.path.join(label_seg_val_dir, image_name.replace('.jpg', '.txt'))
+#             depth_save_path = os.path.join(depth_val_dir, image_name.replace('.jpg', '.png'))
+#         else:
+#             split = 'train'
+#             image_save_path = os.path.join(image_train_dir, image_name)
+#             label_save_path = os.path.join(label_seg_train_dir, image_name.replace('.jpg', '.txt'))
+#             depth_save_path = os.path.join(depth_train_dir, image_name.replace('.jpg', '.png'))
+
+#         # Save image
+#         Image.fromarray(rgb_img).save(image_save_path)
+#         save_depth(depth_save_path, depth_mm)
+
+#         # Generate YOLO segmentation labels and visualizations
+#         labels_written = 0
+#         with open(label_save_path, 'w') as f:
+#             for obj_idx, obj in enumerate(sampled_target_bop_objs):
+#                 # Find instance ID for this object
+#                 obj_instance_id = None
+#                 obj_name = obj.get_name()
+                
+#                 for inst_id, mapped_name in instance_name_map.items():
+#                     if mapped_name == obj_name:
+#                         obj_instance_id = inst_id
+#                         break
+                
+#                 if obj_instance_id is None:
+#                     continue
+                
+#                 # Extract mask for this object instance
+#                 mask = (seg_mask_instances == obj_instance_id).astype(np.uint8)
+
+#                 # Check if object is visible
+#                 if not np.any(mask):
+#                     continue
+
+#                 # Convert mask to polygons
+#                 polygons = mask_to_polygons(mask)
+
+#                 if polygons:  # Only create visualization if we have valid polygons
+#                     # Create mask visualization
+#                     viz_name = f"scene{i:04d}_cam{frame_idx:02d}_obj{obj_idx:02d}_{obj_name}.jpg"
+#                     viz_path = os.path.join(mask_viz_dir, viz_name)
                     
-                    visualize_mask_and_polygons(rgb_img, mask, norm_polygons, obj_name, viz_path)
+#                     # Convert polygons to normalized format for visualization
+#                     norm_polygons = []
+#                     for poly in polygons:
+#                         norm_poly = []
+#                         for k, p_coord in enumerate(poly):
+#                             if k % 2 == 0:  # x coordinate
+#                                 norm_poly.append(p_coord / img_width)
+#                             else:  # y coordinate  
+#                                 norm_poly.append(p_coord / img_height)
+#                         norm_polygons.append(norm_poly)
+                    
+#                     visualize_mask_and_polygons(rgb_img, mask, norm_polygons, obj_name, viz_path)
 
-                for poly in polygons:
-                    # Normalize polygon coordinates
-                    norm_poly = []
-                    for k, p_coord in enumerate(poly):
-                        if k % 2 == 0:  # x coordinate
-                            norm_poly.append(str(p_coord / img_width))
-                        else:  # y coordinate
-                            norm_poly.append(str(p_coord / img_height))
+#                 for poly in polygons:
+#                     # Normalize polygon coordinates
+#                     norm_poly = []
+#                     for k, p_coord in enumerate(poly):
+#                         if k % 2 == 0:  # x coordinate
+#                             norm_poly.append(str(p_coord / img_width))
+#                         else:  # y coordinate
+#                             norm_poly.append(str(p_coord / img_height))
 
-                    class_id = CLASS_NAME_TO_ID["Lego_Block"]
-                    f.write(f"{class_id} " + " ".join(norm_poly) + "\n")
-                    labels_written += 1
+#                     class_id = CLASS_NAME_TO_ID["Lego_Block"]
+#                     f.write(f"{class_id} " + " ".join(norm_poly) + "\n")
+#                     labels_written += 1
   
-    # Clean up objects for next scene
-    for obj in sampled_target_bop_objs + sampled_distractor_bop_objs:
-        try:
-            obj.disable_rigidbody()
-            obj.hide(True)
-            obj.delete()
-        except Exception as e:
-            print(f"Warning: Error cleaning up object {obj.get_name()}: {e}")
+#     # Clean up objects for next scene
+#     for obj in sampled_target_bop_objs + sampled_distractor_bop_objs:
+#         try:
+#             obj.disable_rigidbody()
+#             obj.hide(True)
+#             obj.delete()
+#         except Exception as e:
+#             print(f"Warning: Error cleaning up object {obj.get_name()}: {e}")
 
-    print(f"Scene {i+1} completed successfully")
+#     print(f"Scene {i+1} completed successfully")
+    
+# print("Dataset generation complete.")
 
-print("Dataset generation complete.")
+# # Generate dataset.yaml for YOLO
+# dataset_yaml_content = {
+#     'path': str(Path(output_dir).resolve()),
+#     'train': 'images/train',
+#     'val': 'images/val',
+#     'nc': len(CLASS_NAME_TO_ID),
+#     'names': list(CLASS_NAME_TO_ID.keys())
+# }
 
-# Generate dataset.yaml for YOLO
-dataset_yaml_content = {
-    'path': str(Path(output_dir).resolve()),
-    'train': 'images/train',
-    'val': 'images/val',
-    'nc': len(CLASS_NAME_TO_ID),
-    'names': list(CLASS_NAME_TO_ID.keys())
-}
+# yaml_path = os.path.join(output_dir, 'dataset.yaml')
+# with open(yaml_path, 'w') as f:
+#     yaml.dump(dataset_yaml_content, f, default_flow_style=False)
 
-yaml_path = os.path.join(output_dir, 'dataset.yaml')
-with open(yaml_path, 'w') as f:
-    yaml.dump(dataset_yaml_content, f, default_flow_style=False)
-
-print(f"Generated dataset.yaml in {yaml_path}")
+# print(f"Generated dataset.yaml in {yaml_path}")
 
    
