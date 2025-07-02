@@ -225,13 +225,6 @@ light_point.set_energy(200)
 
 # load cc_textures
 cc_textures = bproc.loader.load_ccmaterials(cc_textures_path)
-
-# Define a function that samples 6-DoF poses
-def sample_pose_func(obj: bproc.types.MeshObject):
-    min = np.random.uniform([-0.3, -0.3, 0.0], [-0.2, -0.2, 0.0])
-    max = np.random.uniform([0.2, 0.2, 0.4], [0.3, 0.3, 0.6])
-    obj.set_location(np.random.uniform(min, max))
-    obj.set_rotation_euler(bproc.sampler.uniformSO3())
     
 # activate depth rendering without antialiasing and set amount of samples for color rendering
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
