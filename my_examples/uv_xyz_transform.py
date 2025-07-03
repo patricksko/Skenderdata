@@ -77,6 +77,8 @@ for img_name in image_files:
         ys, xs = np.where(instance_mask == instance_id)
 
         u_center = int(np.mean(xs))
+        # u_fixed = w - 1 - u_center
+        # u_center = u_fixed
         v_center = int(np.mean(ys))
 
         z_raw = depth[v_center, u_center]
@@ -91,10 +93,12 @@ for img_name in image_files:
         print(f"  Pixel center (u,v): ({u_center}, {v_center})")
         print(f"  Depth (raw, scaled): {z_raw}, {z:.3f} m")
         print(f"  3D coordinates (X,Y,Z): ({X:.3f}, {Y:.3f}, {Z:.3f}) meters")
+        cv2.circle(rgb, (u_center, v_center), radius=5, color=(0, 0, 255), thickness=1)
 
 
 
     # optionally visualize
+    
     cv2.imshow("rgb", rgb)
     cv2.imshow("depth", (depth / np.max(depth)).astype(np.float32))
     cv2.imshow("mask", (instance_mask * 50).astype(np.uint8))

@@ -20,7 +20,7 @@ def load_homogeneous_matrices(filepath):
             mat.append(numbers)
         matrices.append(np.array(mat))
     return matrices
-def plot_coordinate_frame(ax, H, label=None, length=0.1):
+def plot_coordinate_frame(ax, H, label=None, length=1):
     """
     Plots a coordinate frame in 3D using a 4x4 homogeneous matrix H.
     """
@@ -35,23 +35,29 @@ def plot_coordinate_frame(ax, H, label=None, length=0.1):
     
     if label:
         ax.text(*origin, label, fontsize=8)
-# Load your matrices
-H_C_W_list = load_homogeneous_matrices('./my_examples/H_C_W.txt')
-H_C_W = H_C_W_list[0]
+    ax.set_xlim([-1, 1])
+    ax.set_ylim([-1, 1])
+    ax.set_zlim([-1, 1])
 
-H_O_W_list = load_homogeneous_matrices('./my_examples/H_O_W.txt')
-H_O_W = H_O_W_list[0:int(len(H_O_W_list)/len(H_C_W_list))]
-# print(H_O_W)
+# Load your matrices
+H_W_C_list = load_homogeneous_matrices('./my_examples/H_C_W.txt')
+H_W_C = H_W_C_list[0]
+H_C_W = np.linalg.inv(H_W_C)
+
+H_W_O_list = load_homogeneous_matrices('./my_examples/H_O_W.txt')
+H_W_O = H_W_O_list[0:int(len(H_W_O_list)/len(H_W_C_list))]
+
+#print(H_O_W)
 # exit()
 # num_obj = int(len(H_O_W_list)/len(H_C_W_list))
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 # plot the camera coordinate frames
-plot_coordinate_frame(ax, H_C_W, length=0.1)
+plot_coordinate_frame(ax, H_W_C, length=0.1)
 # set the view
 # plot the object coordinate frames
-for idx, H in enumerate(H_O_W):
+for idx, H in enumerate(H_W_O):
     plot_coordinate_frame(ax, H, label=f"Obj {idx}", length=0.05)
 
 # set the view

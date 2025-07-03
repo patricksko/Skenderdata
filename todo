@@ -1,0 +1,4 @@
+Blenderproc use tless script auch mit bproc.write, um möglichst viele informationen zu speichern. Dann zwei ansätze, entweder teaser++ oder icp für pointcloud (eher teaser++ da besser outlier detektiert). scope zum detektieren von 6d pose
+
+1. https://github.com/Jiyao06/GenPose
+2. Centerpose: https://github.com/zubair-irshad/CenterSnap
