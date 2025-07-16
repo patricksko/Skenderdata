@@ -27,26 +27,47 @@ Required datasets:
 For each dataset, extract it inside the `resources` folder so the structure looks like this:
 
 resources/
+
 ├── hb/
+
 │   ├── models/
+
 │   ├── models_eval/
+
 │   └── camera.json
+
 ├── ycbv/
+
 │   ├── models/
+
 │   ├── models_eval/
+
 │   └── camera.json
+
 ├── tless/
+
 │   ├── models/
+
 │   ├── models_eval/
+
 │   └── camera.json
+
 ├── itodd/
+
 │   ├── models/
+
 │   ├── models_eval/
+
 │   └── camera.json
+
 ├── tyol/
+
 │   ├── models/
+
 │   ├── models_eval/
+
 │   └── camera.json
+
 
 
 
