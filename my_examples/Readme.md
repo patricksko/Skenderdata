@@ -111,5 +111,7 @@ Update the paths inside it to point to your local folders.
 
 ---
 
-You're now ready to run the pipeline!
+You're now ready to run the rendering_tless.py script in the bop_example folder with:
+```bash
+blenderproc run <path/to>rendering_tless.py --config=<path/to>config.json
 
