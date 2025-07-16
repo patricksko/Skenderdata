@@ -76,5 +76,12 @@ resources/
 > - `models_eval/` — evaluation-ready models  
 > - `camera.json` — camera intrinsics file  
 > 
-> ⚠️ File naming may vary slightly between datasets (e.g. `camera_intrinsics.json`). Adjust as needed or unify them under the expected name (`camera.json`) for compatibility.
+> ⚠️ File naming may vary slightly between datasets (e.g. `camera_intrinsics.json`).
+
+## 🎨 Download CC Textures
+
+Next, download the [CC Textures] using BlenderProc's built-in downloader.
+
+```bash
+blenderproc download cc_textures <output_dir>
 
