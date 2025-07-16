@@ -84,4 +84,32 @@ Next, download the [CC Textures] using BlenderProc's built-in downloader.
 
 ```bash
 blenderproc download cc_textures <output_dir>
+```
+
+Replace `<output_dir>` with the path where you want to save the textures.  
+I recommend placing them inside the `resources/` folder like this:
+
+```bash
+resources/
+├── cc_textures/
+│   ├── wood/
+│   ├── metal/
+│   └── ...
+├── Objects/
+│   ├── ycbv/
+│   ├── tless/
+│   └── ...
+```
+
+---
+
+## ⚙️ Configuration
+
+Once all datasets and textures are in place, open the `config.json` file in this repository.
+
+Update the paths inside it to point to your local folders.
+
+---
+
+You're now ready to run the pipeline!
 
