@@ -28,16 +28,26 @@ For each dataset, extract it inside the `resources` folder so the structure look
 
 resources/
 ├── hb/
-│ ├── models/
-│ ├── models_eval/
-│ └── camera.json
+│   ├── models/
+│   ├── models_eval/
+│   └── camera.json
 ├── ycbv/
-│ ├── models/
-│ ├── models_eval/
-│ └── camera.json
+│   ├── models/
+│   ├── models_eval/
+│   └── camera.json
 ├── tless/
-│ └── ...
-└── ...
+│   ├── models/
+│   ├── models_eval/
+│   └── camera.json
+├── itodd/
+│   ├── models/
+│   ├── models_eval/
+│   └── camera.json
+├── tyol/
+│   ├── models/
+│   ├── models_eval/
+│   └── camera.json
+
 
 
 > ⚠️ **Note:** Make sure each dataset contains the following inside its root directory:
