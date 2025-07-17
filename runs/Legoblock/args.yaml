@@ -1,7 +1,7 @@
 task: segment
 mode: train
 model: yolo11n-seg.pt
-data: ./my_examples/output_blenderproc/bop_data/Legoblock/dataset.yaml
+data: ./my_examples/dataset.yaml
 epochs: 100
 time: null
 patience: 10

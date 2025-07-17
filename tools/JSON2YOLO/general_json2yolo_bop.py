@@ -156,10 +156,9 @@ if __name__ == '__main__':
     dataset = 'Legoblock'
     split_type = 'train_pbr'
     whatsplit = "val"
-    #scenes = list(range(0,9))
-    scenes = [9]
+    #scenes = list(range(0,27))
+    scenes = [27, 28, 29]
 
-    #scenes = list(range(49,60))
     split_path = bop_path + "/" + dataset + "/" + split_type
     split_saver = bop_path + "/" + dataset + "/" + whatsplit
     save_dir = make_dirs(split_saver + "_tuutuuut")

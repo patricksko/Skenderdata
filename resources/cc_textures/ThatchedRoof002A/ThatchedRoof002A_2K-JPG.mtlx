@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<materialx version="1.38" fileprefix="./">
+  <standard_surface name="ThatchedRoof002A_2K_JPG_StandardSurface" xpos="6.159420" ypos="-1.879310" type="surfaceshader">
+    <input value="0" name="specular" type="float" />
+    <input value="1" name="coat" type="float" />
+    <input value="1, 1, 1" name="coat_color" type="color3" />
+    <input value="1" name="base" type="float" />
+    <input nodename="ThatchedRoof002A_2K_JPG_Color" name="base_color" type="color3" />
+    <input nodename="normalmap" name="normal" type="vector3" />
+    <input nodename="normalmap" name="coat_normal" type="vector3" />
+    <input nodename="ThatchedRoof002A_2K_JPG_Roughness" name="specular_roughness" type="float" />
+    <input nodename="ThatchedRoof002A_2K_JPG_Roughness" name="coat_roughness" type="float" />
+  </standard_surface>
+  <surfacematerial name="ThatchedRoof002A_2K_JPG" xpos="8.695652" ypos="0.000000" type="material">
+    <input nodename="ThatchedRoof002A_2K_JPG_StandardSurface" name="surfaceshader" type="surfaceshader" />
+    <input nodename="displacement" name="displacementshader" type="displacementshader" />
+  </surfacematerial>
+  <tiledimage name="ThatchedRoof002A_2K_JPG_Color" xpos="3.623188" ypos="-3.103448" type="color3">
+    <input value="ThatchedRoof002A_2K-JPG_Color.jpg" name="file" type="filename" colorspace="srgb_texture" />
+    <input value="1.0, 1.0" name="uvtiling" type="vector2" />
+  </tiledimage>
+  <tiledimage name="ThatchedRoof002A_2K_JPG_Displacement" xpos="3.623188" ypos="5.163793" type="float">
+    <input value="ThatchedRoof002A_2K-JPG_Displacement.jpg" name="file" type="filename" />
+    <input value="1.0, 1.0" name="uvtiling" type="vector2" />
+  </tiledimage>
+  <displacement name="displacement" xpos="6.159420" ypos="1.879310" type="displacementshader">
+    <input nodename="ThatchedRoof002A_2K_JPG_Displacement" name="displacement" type="float" />
+    <input value="1.0" name="scale" type="float" />
+  </displacement>
+  <tiledimage name="ThatchedRoof002A_2K_JPG_NormalGL" xpos="1.086957" ypos="0.879310" type="vector3">
+    <input value="ThatchedRoof002A_2K-JPG_NormalGL.jpg" name="file" type="filename" />
+    <input value="1.0, 1.0" name="uvtiling" type="vector2" />
+  </tiledimage>
+  <normalmap name="normalmap" xpos="3.623188" ypos="3.586207" type="vector3">
+    <input nodename="ThatchedRoof002A_2K_JPG_NormalGL" name="in" type="vector3" />
+    <input value="1.0" name="scale" type="float" />
+  </normalmap>
+  <tiledimage name="ThatchedRoof002A_2K_JPG_Roughness" xpos="3.623188" ypos="-0.413793" type="float">
+    <input value="ThatchedRoof002A_2K-JPG_Roughness.jpg" name="file" type="filename" />
+    <input value="1.0, 1.0" name="uvtiling" type="vector2" />
+  </tiledimage>
+</materialx>

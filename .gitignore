@@ -10,6 +10,13 @@ output/
 debug/
 resources/AMASS
 resources/cctextures*
+resources/my_textures*
+resources/polyhaven*
+resources/Object_Data/hb*
+resources/Object_Data/itodd*
+resources/Object_Data/tless*
+resources/Object_Data/tyol*
+resources/Object_Data/ycbv*
 resources/scenenet/*zip
 resources/scenenet/SceneNetData
 resources/scenenet/texture*
@@ -36,7 +43,7 @@ docs/source/images/
 docs/source/examples/
 docs/source/*md
 blenderproc_resources/
-/resources/*
+
 
 
 .venv/

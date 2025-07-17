@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<materialx version="1.38" fileprefix="./">
+  <standard_surface ypos="-1.879310" type="surfaceshader" name="SurfaceImperfections004_2K_JPG_StandardSurface" xpos="6.159420">
+    <input value="0" type="float" name="specular" />
+    <input value="1" type="float" name="coat" />
+    <input value="1, 1, 1" type="color3" name="coat_color" />
+    <input value="1" type="float" name="base" />
+    <input type="color3" name="base_color" nodename="SurfaceImperfections004_2K_JPG_Color" />
+    <input type="vector3" name="normal" nodename="normalmap" />
+    <input type="vector3" name="coat_normal" nodename="normalmap" />
+    <input type="color3" name="opacity" nodename="SurfaceImperfections004_2K_JPG_Opacity" />
+  </standard_surface>
+  <surfacematerial ypos="0.000000" type="material" name="SurfaceImperfections004_2K_JPG" xpos="8.695652">
+    <input type="surfaceshader" name="surfaceshader" nodename="SurfaceImperfections004_2K_JPG_StandardSurface" />
+  </surfacematerial>
+  <tiledimage ypos="-3.103448" type="color3" name="SurfaceImperfections004_2K_JPG_Color" xpos="3.623188">
+    <input value="SurfaceImperfections004_2K-JPG_Color.jpg" type="filename" name="file" colorspace="srgb_texture" />
+    <input value="1.0, 1.0" type="vector2" name="uvtiling" />
+  </tiledimage>
+  <tiledimage ypos="0.879310" type="vector3" name="SurfaceImperfections004_2K_JPG_NormalGL" xpos="1.086957">
+    <input value="SurfaceImperfections004_2K-JPG_NormalGL.jpg" type="filename" name="file" />
+    <input value="1.0, 1.0" type="vector2" name="uvtiling" />
+  </tiledimage>
+  <normalmap ypos="3.586207" type="vector3" name="normalmap" xpos="3.623188">
+    <input type="vector3" name="in" nodename="SurfaceImperfections004_2K_JPG_NormalGL" />
+    <input value="1.0" type="float" name="scale" />
+  </normalmap>
+  <tiledimage ypos="2.250000" type="color3" name="SurfaceImperfections004_2K_JPG_Opacity" xpos="3.623188">
+    <input value="SurfaceImperfections004_2K-JPG_Opacity.jpg" type="filename" name="file" />
+    <input value="1.0, 1.0" type="vector2" name="uvtiling" />
+  </tiledimage>
+</materialx>

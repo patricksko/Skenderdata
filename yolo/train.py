@@ -3,7 +3,7 @@ from ultralytics import YOLO
 model = YOLO("yolo11n-seg.pt")
 
 result = model.train(
-    data="./my_examples/output_blenderproc/bop_data/Legoblock/dataset.yaml",
+    data="./my_examples/dataset.yaml",
     epochs = 100,
     imgsz=640,
     batch=16,
