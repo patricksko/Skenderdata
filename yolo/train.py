@@ -3,14 +3,14 @@ from ultralytics import YOLO
 model = YOLO("yolo11n-seg.pt")
 
 result = model.train(
-    data="./examples/my_examples/output_blenderproc/dataset.yaml",
+    data="./my_examples/output_blenderproc/bop_data/Legoblock/dataset.yaml",
     epochs = 100,
     imgsz=640,
     batch=16,
     optimizer="Adam",
     lr0=0.001,
     device="0",
-    name="Lego_Block",
+    name="Legoblock",
     save=True,
     save_json=True,
     project="runs",

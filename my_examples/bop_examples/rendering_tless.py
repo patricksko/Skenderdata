@@ -5,6 +5,10 @@ import numpy as np
 from pathlib import Path
 import json
 import random
+import debugpy
+
+# debugpy.listen(5678)
+# debugpy.wait_for_client()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True, type=str, help='Path to the JSON configuration file for the dataset generation script')
@@ -79,7 +83,7 @@ def sample_pose_func(obj: bproc.types.MeshObject):
 # activate depth rendering without antialiasing and set amount of samples for color rendering
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
 bproc.renderer.set_max_amount_of_samples(50)
-bproc.renderer.enable_segmentation_output(map_by=["instance", "name"])
+#bproc.renderer.enable_segmentation_output(map_by=["instance", "name"])
 
 for i in range(num_scenes):
     colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
@@ -152,7 +156,7 @@ for i in range(num_scenes):
                                 elevation_min = 5,
                                 elevation_max = 89)
         # Determine point of interest in scene as the object closest to the mean of a subset of objects
-        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=10, replace=False))
+        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=6, replace=False))
         # Compute rotation based on vector going from location towards poi
         rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
         # Add homog cam pose based on location an rotation
@@ -175,7 +179,8 @@ for i in range(num_scenes):
                            depths = data["depth"],
                            colors = data["colors"], 
                            color_file_format = "JPEG",
-                           ignore_dist_thres = 10)
+                           ignore_dist_thres = 10,
+                           frames_per_chunk=num_cameras)
     
     for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):      
         obj.disable_rigidbody()

@@ -1,5 +1,9 @@
+
+
+
 import contextlib
 import json
+import os
 
 import cv2
 import pandas as pd
@@ -11,28 +15,23 @@ from utils import *
 def convert_coco_json(split_path='../coco/annotations/', use_segments=False, cls91to80=False, save_dir="new_dir", scene="000000"):
     coco80 = coco91_to_coco80_class()
 
-    # Import json
-    #for json_file in sorted(Path(json_dir).resolve().glob('*.json')):
     json_dir = split_path + "/" + str('{:06d}'.format(scene)) + "/scene_gt_coco.json"
     for json_file in sorted([Path(json_dir).resolve()]):
-        #fn = Path(save_dir) / 'labels' / "json_file".stem.replace('instances_', '')  # folder name
         fn = Path(save_dir) / 'labels'  # folder name
-        #fn.mkdir()
 
         with open(json_file) as f:
             data = json.load(f)
 
-        # Create image dict
         images = {'%g' % x['id']: x for x in data['images']}
-        # Create image-annotations dict
         imgToAnns = defaultdict(list)
         for ann in data['annotations']:
             imgToAnns[ann['image_id']].append(ann)
 
-        # Write labels file
         for img_id, anns in tqdm(imgToAnns.items(), desc=f'Annotations {json_file}'):
             img = images['%g' % img_id]
             h, w, f = img['height'], img['width'], img['file_name']
+            print(f)
+            print(f[4:])
 
             bboxes = []
             segments = []
@@ -53,15 +52,18 @@ def convert_coco_json(split_path='../coco/annotations/', use_segments=False, cls
                     bboxes.append(box)
                 # Segments
                 if use_segments:
-                    if len(ann['segmentation']) > 1:
-                        s = merge_multi_segment(ann['segmentation'])
-                        s = (np.concatenate(s, axis=0) / np.array([w, h])).reshape(-1).tolist()
-                    else:
-                        s = [j for i in ann['segmentation'] for j in i]  # all segments concatenated
-                        s = (np.array(s).reshape(-1, 2) / np.array([w, h])).reshape(-1).tolist()
-                    s = [cls] + s
-                    if s not in segments:
-                        segments.append(s)
+                    if isinstance(ann["segmentation"], list):
+                        if len(ann['segmentation']) > 1:
+                            s = merge_multi_segment(ann['segmentation'])
+                            s = (np.concatenate(s, axis=0) / np.array([w, h])).reshape(-1).tolist()
+                        else:
+                            s = [j for i in ann['segmentation'] for j in i]  # all segments concatenated
+                            s = (np.array(s).reshape(-1, 2) / np.array([w, h])).reshape(-1).tolist()
+                        s = [cls] + s
+                        if s not in segments:
+                            segments.append(s)
+                    elif isinstance(ann["segmentation"], dict):
+                        print("convert to Polygon format first")
 
             # Write
             print(split_path + "/" + str('{:06d}'.format(scene)) + '/' + f)
@@ -74,6 +76,7 @@ def convert_coco_json(split_path='../coco/annotations/', use_segments=False, cls
             with open((fn / f).with_suffix('.txt'), 'a') as file:
                 for i in range(len(bboxes)):
                     line = *(segments[i] if use_segments else bboxes[i]),  # cls, box or segments
+                    print(line)
                     file.write(('%g ' * len(line)).rstrip() % line + '\n')
 
 
@@ -149,14 +152,17 @@ def delete_dsstore(path='../datasets'):
 
 
 if __name__ == '__main__':
-    save_dir = make_dirs()  # output directory
-    bop_path = '/home/hoenig/BOP/Pix2Pose/pix2pose_datasets'
-    dataset = 'itodd'
-    split_type = 'val'
-    scenes = list(range(1,2))
-    #scenes = list(range(1,21))
-    #scenes = [2]
-    print(scenes)
+    bop_path = '/home/skoumal/dev/BlenderProc/my_examples/output_blenderproc/bop_data'
+    dataset = 'Legoblock'
+    split_type = 'train_pbr'
+    whatsplit = "val"
+    #scenes = list(range(0,9))
+    scenes = [9]
+
+    #scenes = list(range(49,60))
+    split_path = bop_path + "/" + dataset + "/" + split_type
+    split_saver = bop_path + "/" + dataset + "/" + whatsplit
+    save_dir = make_dirs(split_saver + "_tuutuuut")
 
     for scene in scenes:
 
@@ -165,12 +171,12 @@ if __name__ == '__main__':
         print("SPLIT: \t\t\t", split_type)
         print("")
         print("File: ", bop_path + "/" + dataset + "/" + split_type + "/" + str('{:06d}'.format(scene)) + "/scene_gt_coco.json")
-        split_path = bop_path + "/" + dataset + "/" + split_type
+
         convert_coco_json(split_path=split_path,
                             use_segments=True,
                             cls91to80=False,
                             save_dir=save_dir,
-                            scene = scene)
+                            scene=scene)
 
     # zip results
     # os.system('zip -r ../coco.zip ../coco')
