@@ -110,7 +110,28 @@ Once all datasets and textures are in place, open the `config.json` file in this
 Update the paths inside it to point to your local folders.
 
 ---
+For compatibility with Peter Hönigs JSON2YOLO file you need to do some changes in:
+'''
+blender/blender-4.2.1-linux-x64/custom-python-packages/lib/python3.11/site-packages/bop_toolkit_lib/pycoco_utils.py
+'''
+- In the "create_annotation_info" function change mask_encoding_format from "rle" to "polygon"
+- In the "binary_mask_to_polygon" function change
+'''
+contours = np.array(measure.find_contours(padded_binary_mask, 0.5))
+'''
 
+to
+'''
+contours = measure.find_contours(padded_binary_mask, 0.5)
+'''
+and change this code line
+'''
+contours = contours - 1
+'''
+to 
+'''
+contour = contour - 1'''
+and put it in the for loop
 You're now ready to run the rendering_tless.py script in the bop_example folder with:
 ```bash
 blenderproc run <path/to>rendering_tless.py --config=<path/to>config.json
