@@ -8,6 +8,7 @@ blender
 .vscode/
 output/
 debug/
+my_examples/output_blenderproc_blurr*
 resources/AMASS
 resources/cc_textures*
 resources/my_textures*
