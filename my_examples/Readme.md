@@ -133,7 +133,20 @@ to
 ```
 contour = contour - 1
 ```
-and put it in the for loop
+and put it in the for loop.
+
+Finally you have to add in the "get_model_params" function in 
+```bash
+blender/blender-4.2.1-linux-x64/custom-python-packages/lib/python3.11/site-packages/bop_toolkit_lib/dataset_params.py
+```
+the Legoblock. Therefore add the Legoblock in the section "obj_ids" as 
+```
+Legoblock": list(range(1,19))
+```
+and in the "symmetric_obj_ids" section as :
+```
+Legoblock": None
+```
 You're now ready to run the rendering_tless.py script in the bop_example folder with:
 ```bash
 blenderproc run <path/to>rendering_tless.py --config=<path/to>config.json
