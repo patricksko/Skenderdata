@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 model = YOLO("runs/Legoblock/weights/best.pt")
 
 # Load image
-img_path = "./prediction.jpg"
+img_path = "./frame0074.jpg"
 img = cv2.imread(img_path)
 
 # Predict

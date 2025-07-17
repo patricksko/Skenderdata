@@ -5,7 +5,7 @@
   
     "bop_path": "../../resources/Object_Data",
     "cc_textures_path": "../../resources/cc_textures",
-    "save_path": "../output_blenderproc_blurr",
+    "save_path": "../output_blenderproc",
     "camera": {
       "px": 600,
       "py": 600,

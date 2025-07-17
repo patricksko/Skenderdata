@@ -172,20 +172,13 @@ for i in range(num_scenes):
     # render the whole pipeline
     data = bproc.renderer.render()
 
-    blurred_colors = []
-    for color_img in data["colors"]:
-        # Convert to uint8 in case it's float32
-        color_img = (color_img * 255).astype(np.uint8) if color_img.dtype == np.float32 else color_img
-        # Apply Gaussian blur (you can tweak kernel size)
-        blurred_img = cv2.GaussianBlur(color_img, (7, 7), sigmaX=1.5)
-        blurred_colors.append(blurred_img)
     # Write data in bop format
     bproc.writer.write_bop(os.path.join(output_dir, 'bop_data'),
                            target_objects = sampled_target_bop_objs,
                            dataset = 'Legoblock',
                            depth_scale = 0.1,
                            depths = data["depth"],
-                           colors = blurred_colors, #data["colors"], 
+                           colors = data["colors"], 
                            color_file_format = "JPEG",
                            ignore_dist_thres = 10,
                            frames_per_chunk=num_cameras)
