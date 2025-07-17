@@ -9,7 +9,7 @@ blender
 output/
 debug/
 resources/AMASS
-resources/cctextures*
+resources/cc_textures*
 resources/my_textures*
 resources/polyhaven*
 resources/Object_Data/hb*
