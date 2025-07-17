@@ -5,7 +5,7 @@
   
     "bop_path": "../../resources/Object_Data",
     "cc_textures_path": "../../resources/cc_textures",
-    "save_path": "../output_blenderproc",
+    "save_path": "../output_blenderproc_blurr",
     "camera": {
       "px": 600,
       "py": 600,
@@ -41,9 +41,9 @@
       }
     },
     "dataset": {
-      "num_cameras": 50,
-      "num_scenes": 30,
-      "num_distractors": 4,
+      "num_cameras": 5,
+      "num_scenes": 2,
+      "num_distractors": 0,
       "num_targets": 8,
       "pose": true,
       "detection": true,
