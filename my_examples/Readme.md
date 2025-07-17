@@ -141,11 +141,11 @@ blender/blender-4.2.1-linux-x64/custom-python-packages/lib/python3.11/site-packa
 ```
 the Legoblock. Therefore add the Legoblock in the section "obj_ids" as 
 ```
-Legoblock": list(range(1,19))
+"Legoblock": list(range(1,19))
 ```
 and in the "symmetric_obj_ids" section as :
 ```
-Legoblock": None
+"Legoblock": None
 ```
 You're now ready to run the rendering_tless.py script in the bop_example folder with:
 ```bash
