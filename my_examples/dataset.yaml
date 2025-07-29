@@ -1,6 +1,5 @@
 path: /home/skoumal/dev/BlenderProc/my_examples/output_blenderproc/bop_data/Legoblock/  # dataset root dir
-train:  # train images (relative to 'path') 128 images
-    - train_tuutuuut
+train: train_tuutuuut
 val:   val_tuutuuut # val images (relative to 'path') 128 images
 test:  # test images (optional)
 
@@ -25,3 +24,8 @@ names:
     16: "16"  
     17: "17"  
     18: "18"  
+    19: "19"  
+# train: /home/skoumal/dev/BlenderProc/my_examples/output_blenderproc/bop_data/Legoblock/train_tuutuuut
+# val: /home/skoumal/dev/BlenderProc/my_examples/output_blenderproc/bop_data/Legoblock/val_tuutuuut
+# nc: 1
+# names: ['Lego_Block']

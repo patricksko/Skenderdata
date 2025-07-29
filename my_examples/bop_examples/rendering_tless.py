@@ -38,12 +38,19 @@ num_targets = json_config['dataset']['num_targets']
 bproc.init()
 
 # load bop objects into the scene
-target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'), model_type = 'cad', mm2m = True)
-
+target_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'), model_type = 'cad', object_model_unit='mm')
+# SOLUTION 1: Set all Lego blocks to have the same category_id
+# This ensures they're treated as the same class
+LEGO_CLASS_ID = 1  # Single class ID for all Lego blocks
+for obj in target_bop_objs:
+    obj.set_cp("category_id", LEGO_CLASS_ID)
+    # Optionally set a consistent name
+    obj.set_name("lego_block")
+    
 # load distractor bop objects
-itodd_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'tyol'), mm2m = True)
-ycbv_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'ycbv'), mm2m = True)
-hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'hb'), mm2m = True)
+itodd_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'tyol'), object_model_unit='mm')
+ycbv_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'ycbv'), object_model_unit='mm')
+hb_dist_bop_objs = bproc.loader.load_bop_objs(bop_dataset_path = os.path.join(bop_dataset_path, 'hb'), object_model_unit='mm')
 
 # load BOP datset intrinsics
 bproc.loader.load_bop_intrinsics(bop_dataset_path = os.path.join(bop_dataset_path, 'Legoblock'))
@@ -87,7 +94,7 @@ bproc.renderer.set_max_amount_of_samples(50)
 #bproc.renderer.enable_segmentation_output(map_by=["instance", "name"])
 
 for i in range(num_scenes):
-    colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
+    
 
     # Sample bop objects for a scene
     sampled_target_bop_objs = list(np.random.choice(target_bop_objs, size=num_targets, replace=False))
@@ -95,17 +102,43 @@ for i in range(num_scenes):
     sampled_distractor_bop_objs += list(np.random.choice(ycbv_dist_bop_objs, size=num_distractors, replace=False))
     sampled_distractor_bop_objs += list(np.random.choice(hb_dist_bop_objs, size=num_distractors, replace=False))
 
-    # Randomize materials and set physics
-    for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):     
+    texture_ratio = json_config['dataset']['texture_ratio']
+    num_textured = int(len(sampled_target_bop_objs) * texture_ratio)
+
+    # Randomly select target objects to receive a texture
+    textured_targets = set(random.sample(sampled_target_bop_objs, num_textured))
+    for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):   
+        colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
+        random_texture = np.random.choice(cc_textures)
+        
         if obj in sampled_target_bop_objs:
-            mat = bproc.material.create(f"target_material")
-            obj.replace_materials(mat)
-            mat.set_principled_shader_value("Base Color", random.choice(colors))
+            if obj in textured_targets:
+                obj.replace_materials(random_texture)
+            else:
+                mat = bproc.material.create("target_material")
+                obj.replace_materials(mat)
+                mat.set_principled_shader_value("Base Color", random.choice(colors))
+            
             mat.set_principled_shader_value("Roughness", np.random.uniform(0.5, 0.9))
             mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0.1, 0.6))
-            obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
-            obj.hide(False)   
-        mat = obj.get_materials()[0]
+            obj.enable_rigidbody(True, mass=1.0, friction=100.0, linear_damping=0.99, angular_damping=0.99)
+            obj.hide(False)
+        
+    # Get the material after assigning
+    mat = obj.get_materials()[0]
+    # Randomize materials and set physics
+    # for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):   
+    #     colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
+    #     random_texture = np.random.choice(cc_textures)
+    #     if obj in sampled_target_bop_objs:
+    #         mat = bproc.material.create(f"target_material")
+    #         obj.replace_materials(mat)
+    #         mat.set_principled_shader_value("Base Color", random.choice(colors))
+    #         mat.set_principled_shader_value("Roughness", np.random.uniform(0.5, 0.9))
+    #         mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0.1, 0.6))
+    #         obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99)
+    #         obj.hide(False)   
+    #     mat = obj.get_materials()[0]
         if obj.get_cp("bop_dataset_name") in ['itodd', 'tless']:
             grey_col = np.random.uniform(0.1, 0.9)   
             mat.set_principled_shader_value("Base Color", [grey_col, grey_col, grey_col, 1])        

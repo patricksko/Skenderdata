@@ -16,17 +16,17 @@ import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 # Load YOLO model
-model = YOLO("runs/Legoblock/weights/best.pt")
+model = YOLO("runs2/Legoblock/weights/best.pt")
 
 # Load image
-img_path = "./frame0074.jpg"
+img_path = "./prediction.jpg"
 img = cv2.imread(img_path)
 
 # Predict
 results = model(
     source=img_path,
     imgsz=640,
-    conf=0.5,
+    conf=0.7,
     save=True,   
     device="0"
 )
