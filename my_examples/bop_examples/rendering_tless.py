@@ -114,18 +114,20 @@ for i in range(num_scenes):
         if obj in sampled_target_bop_objs:
             if obj in textured_targets:
                 obj.replace_materials(random_texture)
+                if not obj.has_uv_mapping():
+                    obj.add_uv_mapping("smart")
             else:
                 mat = bproc.material.create("target_material")
                 obj.replace_materials(mat)
                 mat.set_principled_shader_value("Base Color", random.choice(colors))
-            
+            mat = obj.get_materials()[0]
             mat.set_principled_shader_value("Roughness", np.random.uniform(0.5, 0.9))
             mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0.1, 0.6))
             obj.enable_rigidbody(True, mass=1.0, friction=100.0, linear_damping=0.99, angular_damping=0.99)
             obj.hide(False)
         
-    # Get the material after assigning
-    mat = obj.get_materials()[0]
+        # Get the material after assigning
+        
     # Randomize materials and set physics
     # for obj in (sampled_target_bop_objs + sampled_distractor_bop_objs):   
     #     colors = [[*np.random.rand(3), 1.0] for _ in range(6)]
@@ -190,7 +192,7 @@ for i in range(num_scenes):
                                 elevation_min = 5,
                                 elevation_max = 89)
         # Determine point of interest in scene as the object closest to the mean of a subset of objects
-        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=6, replace=False))
+        poi = bproc.object.compute_poi(np.random.choice(sampled_target_bop_objs, size=15, replace=False))
         # Compute rotation based on vector going from location towards poi
         rotation_matrix = bproc.camera.rotation_from_forward_vec(poi - location, inplane_rot=np.random.uniform(-3.14159, 3.14159))
         # Add homog cam pose based on location an rotation
